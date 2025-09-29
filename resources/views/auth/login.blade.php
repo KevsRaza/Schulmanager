@@ -1,4 +1,6 @@
-<x-layouts.auth>
+@extends('layouts.auth')
+
+@section('content')
     <div class="login-container">
         <div class="login-header">
             <h1>SCHULMANAGER</h1>
@@ -51,4 +53,4 @@
             <p>powered by PS-Solutions4You UG</p>
         </div>
     </div>
-</x-layouts.auth>
+@endsection

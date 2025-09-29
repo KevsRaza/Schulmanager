@@ -1,4 +1,4 @@
-@extends('layouts.app')
+<x-layouts.auth>
 
 @section('content')
 <div class="max-w-4xl mx-auto py-6 px-4">
@@ -15,4 +15,4 @@
         </div>
     </div>
 </div>
-@endsection
+</x-layouts.auth>

@@ -25,9 +25,7 @@ Route::post('/logout', [AuthController::class, 'logout'])
 // Routes protégées
 Route::middleware('auth')->group(function () {
     // Dashboard
-    Route::get('/dashboard', function () {
-        return Livewire::mount(\App\Http\Livewire\Dashboard::class);
-    })->name('dashboard');
+    Route::get('/dashboard', Dashboard::class)->name('dashboard');
 
     // Schüler Routes
     Route::prefix('schulers')->group(function () {
@@ -62,4 +60,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/dossiers/{id}/edit', function ($id) {
         return view('dossiers.edit', ['id' => $id]);
     })->name('dossiers.edit');
+
+    Route::get('/test', function () {
+        return view('test');
+    });
 });

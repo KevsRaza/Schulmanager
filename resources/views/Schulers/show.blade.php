@@ -1,41 +1,80 @@
-<x-layouts.app>
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 bg-blue-50">
-            <div class="flex justify-between items-center">
-                <h2 class="text-2xl font-bold text-gray-800">{{ $schuler->full_name }}</h2>
-                <a href="{{ route('schulers.index') }}" class="text-blue-600 hover:text-blue-800">← Retour</a>
+
+    <div class="flex flex-col sm:flex-row gap-4 mb-6">
+        <div class="flex-1">
+            <div class="search-input">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Rechercher un élève, école ou email..." wire:model.debounce.300ms="studentSearch">
             </div>
         </div>
-
-        <div class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Informations personnelles -->
-                <div class="bg-gray-50 p-6 rounded-lg">
-                    <h3 class="text-lg font-semibold mb-4">Informations Personnelles</h3>
-                    <div class="space-y-2">
-                        <p><strong>Nom complet:</strong> {{ $schuler->full_name }}</p>
-                        <p><strong>Email:</strong> {{ $schuler->email }}</p>
-                        <p><strong>Date de naissance:</strong> {{ $schuler->geburtsdatum_Schuler->format('d/m/Y') }}</p>
-                        <p><strong>Âge:</strong> {{ $schuler->alter }} ans</p>
-                        <p><strong>Pays:</strong> {{ $schuler->land_Shuler }}</p>
-                        <p><strong>Niveau allemand:</strong> {{ $schuler->deutschniveau_Schuler }}</p>
-                        <p><strong>Niveau éducation:</strong> {{ $schuler->bildungsniveau_Schuler }}</p>
-                    </div>
-                </div>
-
-                <!-- Formation -->
-                <div class="bg-gray-50 p-6 rounded-lg">
-                    <h3 class="text-lg font-semibold mb-4">Formation</h3>
-                    <div class="space-y-2">
-                        <p><strong>Formation:</strong> {{ $schuler->ausbildung->name_Ausbildung ?? 'N/A' }}</p>
-                        <p><strong>Début:</strong> {{ $schuler->datum_Anfang_Ausbildung->format('d/m/Y') }}</p>
-                        <p><strong>Fin:</strong> {{ $schuler->datum_Ende_Ausbildung->format('d/m/Y') }}</p>
-                        <p><strong>École:</strong> {{ $schuler->schule->name_Schule ?? 'N/A' }}</p>
-                        <p><strong>Entreprise:</strong> {{ $schuler->firma->name_Firma ?? 'N/A' }}</p>
-                        <p><strong>Dossier:</strong> {{ $schuler->dossier->name_Dossier ?? 'N/A' }}</p>
-                    </div>
-                </div>
-            </div>
+        <div class="flex gap-2">
+            <button class="btn btn-secondary"><i class="fas fa-filter"></i> Filtres</button>
+            <button class="btn btn-secondary"><i class="fas fa-sort"></i> Trier</button>
         </div>
     </div>
-</x-layouts.app>
+
+    <!-- Students Table -->
+    <div class="overflow-hidden rounded-lg">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Élève</th>
+                    <th>Email</th>
+                    <th>École</th>
+                    <th>Entreprise</th>
+                    <th>Formation</th>
+                    <th>Niveau Allemand</th>
+                    <th>Période</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($filteredSchulers as $schuler)
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user text-blue-600"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-gray-900">{{ $schuler['prenom'] }} {{ $schuler['nom'] }}</div>
+                                <div class="text-sm text-gray-500">ID: {{ $schuler['id'] }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-sm text-gray-600">{{ $schuler['email'] }}</td>
+                    <td>
+                        <span class="badge badge-blue">
+                            <i class="fas fa-school mr-1"></i> {{ $schuler['ecole'] }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-green">
+                            <i class="fas fa-building mr-1"></i> {{ $schuler['entreprise'] }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-yellow">
+                            <i class="fas fa-book mr-1"></i> {{ $schuler['formation'] }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-purple">{{ $schuler['niveau_allemand'] }}</span>
+                    </td>
+                    <td class="text-sm text-gray-600">
+                        {{ \Carbon\Carbon::parse($schuler['date_debut'])->format('d/m/Y') }} -
+                        {{ \Carbon\Carbon::parse($schuler['date_fin'])->format('d/m/Y') }}
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="7" class="px-6 py-8 text-center">
+                        <div class="text-gray-500">
+                            <i class="fas fa-user-graduate text-4xl mb-4"></i>
+                            <p class="font-medium">Aucun élève trouvé</p>
+                            <p class="text-sm mt-1">Aucun élève n'est enregistré dans le système</p>
+                        </div>
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
