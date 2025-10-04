@@ -9,11 +9,28 @@ class Schuler extends Model
     protected $table = 'schuler';
     protected $primaryKey = 'id_Schuler';
 
+    protected $casts = [
+        'geburtsdatum_Schuler' => 'date',
+        'datum_Anfang_Ausbildung' => 'date',
+        'datum_Ende_Ausbildung' => 'date',
+    ];
+
+
     protected $fillable = [
-        'vorname', 'familiename', 'geburtsdatum_Schuler', 'land_Shuler',
-        'deutschniveau_Schuler', 'bildungsniveau_Schuler', 'datum_Anfang_Ausbildung',
-        'datum_Ende_Ausbildung', 'id_Firma', 'id_Schule', 'id_Ausbildung',
-        'id_Dokument', 'id_Dossier', 'email'
+        'vorname',
+        'familiename',
+        'geburtsdatum_Schuler',
+        'land_Schuler',
+        'deutschniveau_Schuler',
+        'bildungsniveau_Schuler',
+        'datum_Anfang_Ausbildung',
+        'datum_Ende_Ausbildung',
+        'email',
+        'id_Firma',
+        'id_Schule',
+        'id_Ausbildung',
+        'id_Dokument',
+        'id_Dossier',
     ];
 
     public function schule()
@@ -39,5 +56,11 @@ class Schuler extends Model
     public function dossier()
     {
         return $this->belongsTo(Dossier::class, 'id_Dossier', 'id_Dossier');
+    }
+
+    // Méthode pour obtenir le nom complet de l'élève
+    public function getFullNameAttribute()
+    {
+        return "{$this->vorname} {$this->familiename}";
     }
 }

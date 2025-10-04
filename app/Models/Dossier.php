@@ -33,4 +33,9 @@ class Dossier extends Model
     {
         return $this->hasMany(Schuler::class, 'id_Dossier', 'id_Dossier');
     }
+
+    public function sousDossiers()
+    {
+        return $this->hasMany(SousDossier::class, 'id_Dossier', 'id_Dossier');
+    }
 }

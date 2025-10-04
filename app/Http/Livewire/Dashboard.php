@@ -8,31 +8,32 @@ use Livewire\WithFileUploads;
 use App\Models\Dossier;
 use App\Models\Schuler;
 use App\Models\Formulaire;
+use App\Models\SousDossier;
 use Illuminate\Support\Facades\Log;
 
 class Dashboard extends Component
 {
     use WithPagination, WithFileUploads;
 
+    // Propriété pour chaques méthodes
     public $layout = 'app';
-
     public $activeTab = 'Dossiers';
     public array $tabs = ['Dossiers', 'Élèves', 'Entreprises', 'Écoles', 'Formulaires'];
 
     public $search = '';
     public $schulerSearch = '';
-
     public $formulaireSearch = '';
     public $page = 1;
 
+    // Tri pour les formulaires
     public $formSortField = 'created_at'; // champ par défaut
     public $formSortDirection = 'desc';
 
-    // Pour les dossiers
+    // Tri pour les dossiers
     public $dossierSortField = 'name_Dossier';
     public $dossierSortDirection = 'asc';
 
-    // Pour les élèves
+    // Tri pour les élèves
     public $schulerSortField = 'familiename';
     public $schulerSortDirection = 'asc';
 
@@ -40,19 +41,8 @@ class Dashboard extends Component
     public $showFormModal = false;
     public $showFilterDropdown = false;
     public $showSortDropdown = false;
-
-
-    // Méthodes pour basculer les dropdowns
-    public function toggleFilter()
-    {
-        $this->showFilterDropdown = !$this->showFilterDropdown;
-    }
-
-    public function toggleSort()
-    {
-        $this->showSortDropdown = !$this->showSortDropdown;
-    }
-
+    public $showSchulerModal = false; // Pour le modal des élèves
+    public $schuler = []; // Données de l'élève
 
     public $form = [
         'name_Firma' => '',
@@ -67,8 +57,6 @@ class Dashboard extends Component
         'image_Schuler' => null,
     ];
 
-
-
     protected $queryString = ['activeTab'];
 
     public function mount()
@@ -82,42 +70,73 @@ class Dashboard extends Component
         $this->resetPage(); // reset pagination si nécessaire
     }
 
+    // Propriété pour chaques méthodes
+
+    //Dossiers
+
     public function getFoldersProperty()
     {
-        try {
-            Log::info('Récupération des dossiers...');
+        $query = Dossier::with(['sousDossiers'])
+            ->withCount(['dokumente', 'ausbildungen', 'schulers', 'schulen', 'firmen', 'sousDossiers']);
 
-            $dossiers = Dossier::withCount(['dokumente', 'ausbildungen', 'schulers', 'schulen', 'firmen'])->paginate(10);
-
-            Log::info('Dossiers récupérés: ' . $dossiers->count());
-
-            return $dossiers->map(function ($dossier) {
-                return [
-                    'id' => $dossier->id,
-                    'name' => $dossier->name_Dossier ?? 'Sans nom',
-                    'stats' => [
-                        'documents' => $dossier->dokumente_count ?? 0,
-                        'formations' => $dossier->ausbildungen_count ?? 0,
-                        'élèves' => $dossier->schulers_count ?? 0,
-                        'écoles' => $dossier->schulen_count ?? 0,
-                        'entreprises' => $dossier->firmen_count ?? 0,
-                        // 'entreprises' => 0,
-                    ],
-                    'created_at' => $dossier->created_at?->format('d/m/Y') ?? 'Date inconnue'
-                ];
-            })->toArray();
-        } catch (\Exception $e) {
-            Log::error('Erreur récupération dossiers: ' . $e->getMessage());
-            return []; // Toujours retourner un tableau vide en cas d'erreur
+        if (!empty($this->search)) {
+            $query->where('name_Dossier', 'like', '%' . $this->search . '%');
         }
+
+        return $query->orderBy($this->dossierSortField, $this->dossierSortDirection)
+            ->paginate(10);
     }
+
+
+    public function getFilteredFoldersProperty()
+    {
+        $folders = $this->folders ?? collect();
+
+        if (!empty($this->search)) {
+            $folders = $folders->filter(function ($folder) {
+                return stripos($folder->name_Dossier, $this->search) !== false;
+            });
+        }
+
+        return $folders;
+    }
+
+    public function sortDossiersByName()
+    {
+        $this->dossierSortDirection = $this->dossierSortDirection === 'asc' ? 'desc' : 'asc';
+    }
+
+    // --- méthode appelée par le dropdown ---
+    public function sortDossiers($field)
+    {
+        if ($this->dossierSortField === $field) {
+            $this->dossierSortDirection = $this->dossierSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->dossierSortField = $field;
+            $this->dossierSortDirection = 'asc';
+        }
+
+        $this->resetPage();
+    }
+
+    public function viewFolder($id)
+    {
+        $this->dispatch('notify', message: "Voir dossier #{$id}", type: 'info');
+    }
+
+
+
+    //Dossiers
+
+    //Schulers
 
     public function getSchulersProperty()
     {
         try {
             Log::info('Récupération des élèves...');
 
-            $schulers = Schuler::with(['schule', 'firma', 'ausbildung'])->get();
+            $schulers = Schuler::with(['schule', 'firma', 'ausbildung'])
+                ->paginate(10); // Utilisation de la pagination
 
             Log::info('Élèves récupérés: ' . $schulers->count());
 
@@ -127,106 +146,93 @@ class Dashboard extends Component
                     'prenom' => $schuler->vorname ?? 'N/A',
                     'nom' => $schuler->familiename ?? 'N/A',
                     'email' => $schuler->email ?? 'N/A',
+                    'land_Schuler' => $schuler->land_Schuler ?? 'N/A',
+                    'deutschniveau_Schuler' => $schuler->deutschniveau_Schuler ?? 'N/A',
+                    'bildungsniveau_Schuler' => $schuler->bildungsniveau_Schuler ?? 'N/A',
+                    'date_debut' => $schuler->datum_Anfang_Ausbildung?->format('d/m/Y') ?? 'N/A',
+                    'date_fin' => $schuler->datum_Ende_Ausbildung?->format('d/m/Y') ?? 'N/A',
                     'ecole' => $schuler->schule->name_Schule ?? 'Non assigné',
                     'entreprise' => $schuler->firma->name_Firma ?? 'Non assigné',
                     'formation' => $schuler->ausbildung->name_Ausbildung ?? 'Non assigné',
-                    'niveau_allemand' => $schuler->deutschniveau_Schuler ?? 'N/A',
-                    'date_debut' => $schuler->datum_Anfang_Ausbildung?->format('d/m/Y') ?? 'N/A',
-                    'date_fin' => $schuler->datum_Ende_Ausbildung?->format('d/m/Y') ?? 'N/A'
                 ];
-            })->toArray();
+            });
         } catch (\Exception $e) {
             Log::error('Erreur récupération élèves: ' . $e->getMessage());
             return []; // Toujours retourner un tableau vide en cas d'erreur
         }
     }
 
-    public function getFilteredFoldersProperty()
-    {
-        $folders = $this->folders ?? [];
-
-        // 🔎 Filtrer par recherche
-        if (!empty($this->search)) {
-            $folders = array_values(array_filter($folders, function ($folder) {
-                return stripos($folder['name'] ?? '', $this->search) !== false;
-            }));
-        }
-
-        // ↕️ Appliquer le tri si défini
-        if ($this->dossierSortField && $this->dossierSortDirection) {
-            usort($folders, function ($a, $b) {
-                $field = $this->dossierSortField;
-                $direction = $this->dossierSortDirection;
-
-                $valA = $a[$field] ?? '';
-                $valB = $b[$field] ?? '';
-
-                if ($field === 'created_at') {
-                    $valA = strtotime($valA) ?: 0;
-                    $valB = strtotime($valB) ?: 0;
-                }
-
-                if ($valA == $valB) return 0;
-
-                if ($direction === 'asc') {
-                    return $valA <=> $valB;
-                } else {
-                    return $valB <=> $valA;
-                }
-            });
-        }
-
-        Log::info('Filtered + Sorted folders count: ' . count($folders));
-
-        return $folders;
-    }
-
-
 
     public function getFilteredSchulersProperty()
     {
-        $schulers = $this->schulers ?? [];
-
-        if (empty($this->schulerSearch)) {
-            return $schulers;
-        }
-
-        $search = strtolower($this->schulerSearch);
-        return array_values(array_filter($schulers, function ($schuler) use ($search) {
+        return collect($this->schulers)->filter(function ($schuler) {
+            $search = strtolower($this->schulerSearch);
             return stripos($schuler['prenom'] . ' ' . $schuler['nom'], $search) !== false ||
                 stripos($schuler['email'] ?? '', $search) !== false ||
                 stripos($schuler['ecole'] ?? '', $search) !== false ||
                 stripos($schuler['entreprise'] ?? '', $search) !== false;
-        }));
-    }
-
-    // --- méthode appelée par le dropdown ---
-    public function sortDossiers($field, $direction)
-    {
-        // Valide les valeurs (sécurité)
-        $allowedFields = ['name_Dossier', 'created_at'];
-        $direction = strtolower($direction) === 'asc' ? 'asc' : 'desc';
-        if (!in_array($field, $allowedFields)) {
-            $field = 'created_at';
-        }
-
-        $this->dossierSortField = $field;
-        $this->dossierSortDirection = $direction;
-        $this->resetPage();
+        })->values()->all();
     }
 
     // Exemple pour schulers (même logique)
-    public function sortSchulers($field, $direction)
+    public function sortSchulers($field)
     {
         $allowed = ['vorname', 'familiename', 'id_Schuler'];
-        $direction = strtolower($direction) === 'asc' ? 'asc' : 'desc';
-        if (!in_array($field, $allowed)) $field = 'familiename';
-        $this->schulerSortField = $field;
-        $this->schulerSortDirection = $direction;
+        $this->schulerSortField = in_array($field, $allowed) ? $field : 'familiename';
+        $this->schulerSortDirection = $this->schulerSortDirection === 'asc' ? 'desc' : 'asc';
         $this->resetPage();
     }
 
-    // 📄 Formulaire
+    public function openSchulerModal()
+    {
+        $this->reset('schuler'); // Réinitialiser les champs du formulaire
+        $this->showSchulerModal = true; // Ouvrir le modal
+    }
+
+    public function closeSchulerModal()
+    {
+        $this->showSchulerModal = false; // Fermer le modal
+    }
+
+    public function saveSchuler()
+    {
+        try {
+            // Validation
+            $this->validate([
+                'schuler.vorname' => 'required|string|max:255',
+                'schuler.familiename' => 'required|string|max:255',
+                'schuler.geburtsdatum_Schuler' => 'required|date',
+                'schuler.land_Schuler' => 'required|string|max:255',
+                'schuler.deutschniveau_Schuler' => 'required|string|max:255',
+                'schuler.bildungsniveau_Schuler' => 'required|string|max:255',
+                'schuler.datum_Anfang_Ausbildung' => 'required|date',
+                'schuler.datum_Ende_Ausbildung' => 'required|date',
+                'schuler.email' => 'required|email|max:255',
+            ]);
+
+            // Création de l'élève
+            Schuler::create($this->schuler);
+
+            // Message de succès
+            session()->flash('message', 'Élève enregistré avec succès !');
+
+            // Réinitialiser le formulaire
+            $this->reset('schuler');
+
+            // Fermer le modal
+            $this->closeSchulerModal();
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de l\'enregistrement de l\'élève: ' . $e->getMessage());
+            session()->flash('error', 'Une erreur est survenue lors de l\'enregistrement de l\'élève.');
+        }
+    }
+
+
+
+    //Schulers
+
+    //Formulaires
+
     public function openFormModal()
     {
         $this->reset('form'); // réinitialise les champs du formulaire
@@ -237,6 +243,7 @@ class Dashboard extends Component
     {
         $this->showFormModal = false;
     }
+
     public function saveFormulaire()
     {
         // validation
@@ -303,18 +310,22 @@ class Dashboard extends Component
 
     public function getFilteredFormulairesProperty()
     {
-        $formulaires = Formulaire::latest()->get();
+        // On applique le tri défini dans sortForms()
+        $query = Formulaire::orderBy($this->formSortField, $this->formSortDirection);
 
-        if (empty($this->formulaireSearch)) {
-            return $formulaires;
+        $formulaires = $query->get();
+
+        // 🔎 Filtrage par recherche
+        if (!empty($this->formulaireSearch)) {
+            $search = strtolower($this->formulaireSearch);
+
+            $formulaires = $formulaires->filter(function ($formulaire) use ($search) {
+                return stripos($formulaire->name_Schuler, $search) !== false
+                    || stripos($formulaire->name_Firma, $search) !== false;
+            });
         }
 
-        $search = strtolower($this->formulaireSearch);
-
-        return $formulaires->filter(function ($formulaire) use ($search) {
-            return stripos($formulaire->name_Schuler, $search) !== false
-                || stripos($formulaire->name_Firma, $search) !== false;
-        });
+        return $formulaires->values(); // remet les index à plat
     }
 
     public function sortForms($field)
@@ -329,49 +340,38 @@ class Dashboard extends Component
         }
     }
 
+    //Formulaires
 
+    //Fonctionnalités partagées
 
-    public function filterOption($option)
+    public function getStatsProperty()
     {
-        // appliquer le filtre choisi
-        $this->dispatchBrowserEvent('notify', ['message' => "Filtré par $option"]);
-        $this->showFilterDropdown = false; // fermer le dropdown après sélection
+        $folders = $this->folders ?? collect();
+        $schulers = $this->schulers ?? collect();
+
+        return [
+            'total_dossiers' => $folders->count(),
+            'total_eleves' => $schulers->count(),
+            'total_ecoles' => count(array_unique(array_column($schulers->toArray(), 'ecole'))) ?: 0,
+            'total_entreprises' => count(array_unique(array_column($schulers->toArray(), 'entreprise'))) ?: 0,
+        ];
     }
 
-    public function sortBy($field)
+    // Méthodes pour basculer les dropdowns
+    public function toggleFilter()
     {
-        // appliquer le tri
-        $this->dispatchBrowserEvent('notify', ['message' => "Trié par $field"]);
-        $this->showSortDropdown = false; // fermer le dropdown après sélection
+        $this->showFilterDropdown = !$this->showFilterDropdown;
     }
 
-
-    public function getPaginatedFoldersProperty()
+    public function toggleSort()
     {
-        $filtered = $this->filteredFolders ?? [];
-        $perPage = 10;
-        $start = ($this->page - 1) * $perPage;
-
-        return array_slice($filtered, $start, $perPage);
+        $this->showSortDropdown = !$this->showSortDropdown;
     }
 
     public function getTotalPagesProperty()
     {
         $filtered = $this->filteredFolders ?? [];
         return max(1, ceil(count($filtered) / 10));
-    }
-
-    public function getStatsProperty()
-    {
-        $folders = $this->folders ?? [];
-        $schulers = $this->schulers ?? [];
-
-        return [
-            'total_dossiers' => count($folders),
-            'total_eleves' => count($schulers),
-            'total_ecoles' => count(array_unique(array_column($schulers, 'ecole'))) ?: 0,
-            'total_entreprises' => count(array_unique(array_column($schulers, 'entreprise'))) ?: 0,
-        ];
     }
 
     public function previousPage()
@@ -394,44 +394,48 @@ class Dashboard extends Component
         $this->page = $page;
     }
 
+    public function filterOption($option)
+    {
+        // appliquer le filtre choisi
+        $this->dispatchBrowserEvent('notify', ['message' => "Filtré par $option"]);
+        $this->showFilterDropdown = false; // fermer le dropdown après sélection
+    }
+
+    public function sortBy($field)
+    {
+        // appliquer le tri
+        $this->dispatchBrowserEvent('notify', ['message' => "Trié par $field"]);
+        $this->showSortDropdown = false; // fermer le dropdown après sélection
+    }
+
+    public function updatedSearch()
+    {
+        $this->resetPage(); // Réinitialisez la pagination lorsque la recherche est mise à jour
+    }
+
+    //Fonctionnalités partagées
+
     // Actions simples
+
     public function exportData()
     {
         $this->dispatch('notify', message: 'Export démarré', type: 'info');
     }
 
-    public function createNewDossier()
-    {
-        $this->dispatch('notify', message: 'Création nouveau dossier', type: 'info');
-    }
+    // Actions simples
 
-    public function viewFolder($id)
-    {
-        $this->dispatch('notify', message: "Voir dossier #{$id}", type: 'info');
-    }
-
-    public function editFolder($id)
-    {
-        $this->dispatch('notify', message: "Éditer dossier #{$id}", type: 'warning');
-    }
-
-    public function deleteFolder($id)
-    {
-        $this->dispatch('notify', message: "Supprimer dossier #{$id}", type: 'error');
-    }
 
     public function render()
     {
         return view('livewire.dashboard', [
             'tabs' => $this->tabs,
             'folders' => $this->folders,
-            'filteredFolders' => $this->filteredFolders,
-            'paginatedFolders' => $this->paginatedFolders,
             'totalPages' => $this->totalPages,
             'page' => $this->page,
             'stats' => $this->stats,
-            'formulaires' => $this->filteredFormulaires,
-            'formulaires' => Formulaire::orderBy($this->formSortField, $this->formSortDirection)->get(),
+            'filteredFormulaires' => $this->filteredFormulaires,
+            'filteredSchulers' => $this->filteredSchulers,
+            'showSchulerModal' => $this->showSchulerModal,
         ]);
     }
 }
