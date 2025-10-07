@@ -130,35 +130,61 @@
                 @if($foldersToDisplay->count())
                 <div class="grid gap-4">
                     @foreach($foldersToDisplay as $folder)
-                    <div x-data="{ open: false }" class="card p-6 hover:shadow-md transition-shadow">
+                    <div x-data="{ open: false }"
+                        class="card p-6 hover:shadow-md transition-shadow relative">
+
+                        <!-- En-tête du dossier -->
                         <div class="flex justify-between items-center">
                             <div class="flex-1">
                                 <h3 class="text-lg font-semibold text-gray-900">
-                                    {{ $folder['name_Dossier']}}
+                                    {{ $folder['name_Dossier'] }}
                                 </h3>
+
                                 <div class="flex flex-wrap gap-2 mt-3">
-                                    <span class="badge badge-blue"><i class="fas fa-file mr-1"></i>{{ $folder->sous_dossiers_count ?? 0 }} docs</span>
-                                    <span class="badge badge-green"><i class="fas fa-users mr-1"></i>{{ $folder->schulers_count ?? 0 }} élèves</span>
-                                    <span class="badge badge-purple"><i class="fas fa-school mr-1"></i>{{ $folder->schulen_count ?? 0 }} écoles</span>
-                                    <span class="badge badge-yellow"><i class="fas fa-building mr-1"></i>{{ $folder->firmen_count ?? 0 }} entreprises</span>
+                                    <span class="badge badge-blue">
+                                        <i class="fas fa-file mr-1"></i>
+                                        {{ $folder->sous_dossiers_count ?? 0 }} docs
+                                    </span>
+                                    <span class="badge badge-green">
+                                        <i class="fas fa-users mr-1"></i>
+                                        {{ $folder->schulers_count ?? 0 }} élèves
+                                    </span>
+                                    <span class="badge badge-purple">
+                                        <i class="fas fa-school mr-1"></i>
+                                        {{ $folder->schulen_count ?? 0 }} écoles
+                                    </span>
+                                    <span class="badge badge-yellow">
+                                        <i class="fas fa-building mr-1"></i>
+                                        {{ $folder->firmen_count ?? 0 }} entreprises
+                                    </span>
                                 </div>
                             </div>
 
-                            <!-- Bouton chevron -->
-                            <button @click="open = !open" class="btn btn-secondary border-0">
-                                <i :class="open ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'"></i>
+                            <!-- Chevron -->
+                            <button @click="open = !open"
+                                class="btn btn-secondary border-0 flex items-center justify-center">
+                                <i class="fas fa-chevron-down transform transition-transform duration-300"
+                                    :class="{'rotate-180': open}"></i>
                             </button>
                         </div>
 
-                        <!-- Sous-dossiers en collapse -->
-                        <div x-show="open" x-transition class="mt-4 pl-6 border-l border-gray-300">
+                        <!-- Contenu déroulant -->
+                        <div x-show="open"
+                            x-transition
+                            class="mt-4 pl-6 border-l-4 border-blue-200 bg-gray-50 rounded-lg p-4 shadow-inner">
                             @if($folder->sousDossiers->count())
                             <ul class="space-y-2">
                                 @foreach($folder->sousDossiers as $sous)
-                                <li class="p-2 bg-gray-50 rounded shadow-sm">
-                                    <i class="fa-regular fa-folder-open text-gray-600 mr-1"></i>
-                                    {{ $sous->name_SousDossier ?? 'Sous-dossier' }}
+                                <li class="p-2 pl-4 bg-white rounded shadow-sm flex items-center justify-between border-l-4 hover:bg-blue-100 border-transparent hover:border-blue-400 transition-all duration-200">
+                                    <div>
+                                        <i class="fa-regular fa-folder-open text-gray-600 mr-1"></i>
+                                        {{ $sous->name_SousDossier ?? 'Sous-dossier' }}
+                                    </div>
+                                    <button class="text-blue-500 hover:text-blue-700">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
                                 </li>
+
                                 @endforeach
                             </ul>
                             @else
@@ -167,6 +193,7 @@
                         </div>
                     </div>
                     @endforeach
+
                 </div>
 
                 {{ $folders->links() }}
@@ -201,7 +228,7 @@
                     <!-- Recherche -->
                     <div class="relative flex-1">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" wire:model="search"
+                        <input type="text" wire:model="schulerSearch"
                             class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Rechercher un élève...">
                     </div>
@@ -235,9 +262,9 @@
                                 @click.away="open = false"
                                 class="absolute mt-2 bg-white border rounded shadow-lg w-48 z-50">
                                 <ul>
-                                    <li wire:click="sortSchuler('vorname', 'asc')" class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Trier par Prénom</li>
-                                    <li wire:click="sortSchuler('familiename', 'asc')" class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Trier par Nom</li>
-                                    <li wire:click="sortSchuler('created_at', 'asc')" class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Trier par Date</li>
+                                    <li wire:click="sortSchulers('vorname')" class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Trier par Prénom</li>
+                                    <li wire:click="sortSchulers('familiename')" class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Trier par Nom</li>
+                                    <li wire:click="sortSchulers('created_at')" class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Trier par Date</li>
                                 </ul>
                             </div>
                         </div>
@@ -313,22 +340,28 @@
                     <h3 class="font-semibold">Élèves récents</h3>
 
                     @foreach($filteredSchulers as $schuler)
-                    <div x-data="{ open: false }" class="card p-4 hover:shadow-md transition-shadow">
+                    <div x-data="{ open: false }"
+                        class="card p-4 hover:shadow-md transition-shadow flex flex-col">
+
                         <!-- En-tête de l'élève -->
-                        <div class="flex justify-between items-center cursor-pointer" @click="open = !open">
+                        <div class="flex justify-between items-center">
                             <div>
                                 <h3 class="text-lg font-semibold text-gray-900">
                                     {{ $schuler['prenom'] }} {{ $schuler['nom'] }}
                                 </h3>
-                                <p class="text-sm text-gray-500">{{ $schuler['email'] }}</p>
+                                <p class="text-sm text-gray-500">{{ $schuler['email'] ?? 'Email non renseigné' }}</p>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <i :class="open ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
-                            </div>
+                            <button @click="open = !open"
+                                class="btn btn-secondary border-0 flex items-center justify-center">
+                                <i class="fas fa-chevron-down transform transition-transform duration-300"
+                                    :class="{'rotate-180': open}"></i>
+                            </button>
                         </div>
 
                         <!-- Détails déroulants -->
-                        <div x-show="open" x-transition class="mt-2 text-gray-700 space-y-1">
+                        <div x-show="open"
+                            x-transition
+                            class="mt-3 bg-gray-50 border-l-4 border-blue-400 pl-4 rounded-lg shadow-sm text-gray-700 text-sm space-y-2 p-4">
                             <p><strong>Pays :</strong> {{ $schuler['land_Schuler'] ?? 'N/A' }}</p>
                             <p><strong>Niveau d'allemand :</strong> {{ $schuler['deutschniveau_Schuler'] ?? 'N/A' }}</p>
                             <p><strong>Niveau d'éducation :</strong> {{ $schuler['bildungsniveau_Schuler'] ?? 'N/A' }}</p>
@@ -337,6 +370,7 @@
                         </div>
                     </div>
                     @endforeach
+
                 </div>
 
             </div>
@@ -356,16 +390,12 @@
 
                 <!-- Filtres / Tri -->
                 <div class="flex gap-2">
-
                     <!-- Dropdown Filtres -->
                     <div x-data="{ open: false }" class="relative">
                         <button @click="open = !open" class="btn btn-secondary flex items-center gap-1">
                             <i class="fas fa-filter"></i> Filtres
                         </button>
-
-                        <div x-show="open"
-                            @click.away="open = false"
-                            class="absolute mt-2 bg-white border rounded shadow-lg w-48 z-50">
+                        <div x-show="open" @click.away="open = false" class="absolute mt-2 bg-white border rounded shadow-lg w-48 z-50">
                             <ul>
                                 <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Filtre 1</li>
                                 <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Filtre 2</li>
@@ -378,90 +408,50 @@
                         <button @click="open = !open" class="btn btn-secondary flex items-center gap-1">
                             <i class="fas fa-sort"></i> Trier
                         </button>
-
-                        <div x-show="open"
-                            @click.away="open = false"
-                            class="absolute mt-2 bg-white border rounded shadow-lg w-56 z-50">
+                        <div x-show="open" @click.away="open = false" class="absolute mt-2 bg-white border rounded shadow-lg w-56 z-50">
                             <ul>
-                                <!-- Tri par Nom A-Z et Z-A -->
-                                <li wire:click="sortForms('name_Schuler', 'asc')"
-                                    class="px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                                    Nom
-                                </li>
-
-                                <!-- Tri par Date ASC -->
-                                <li wire:click="sortForms('created_at', 'asc')"
-                                    class="px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                                    Date
-                                </li>
+                                <li wire:click="sortForms('name_Schuler', 'asc')" class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Nom</li>
+                                <li wire:click="sortForms('created_at', 'asc')" class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Date</li>
                             </ul>
                         </div>
                     </div>
 
                     <button wire:click="openFormModal" class="btn btn-primary"><i class="fas fa-plus"></i>Nouveau</button>
                 </div>
-
-
-
             </div>
 
             @if (session()->has('message'))
             <div class="p-2 bg-green-100 text-green-800 rounded">{{ session('message') }}</div>
             @endif
 
-            <!-- Modal -->
-            @if($showFormModal)
-            <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
-                    <!-- Header -->
-                    <div class="flex justify-between items-center border-b px-6 py-4">
-                        <h5 class="text-lg font-semibold">Nouveau Formulaire</h5>
-                        <button wire:click="closeFormModal" class="text-gray-500 hover:text-gray-700">
-                            &times;
-                        </button>
-                    </div>
-
-                    <!-- Body -->
-                    <div class="px-6 py-4 space-y-3">
-                        <input type="text" wire:model.defer="form.name_Firma" placeholder="Nom de la société" class="border p-2 rounded w-full">
-                        <input type="text" wire:model.defer="form.name_Manager" placeholder="Nom du manager" class="border p-2 rounded w-full">
-                        <input type="text" wire:model.defer="form.land_Firma" placeholder="Pays de la société" class="border p-2 rounded w-full">
-                        <input type="text" wire:model.defer="form.name_Schuler" placeholder="Nom de l'élève" class="border p-2 rounded w-full">
-                        <input type="text" wire:model.defer="form.land_Schuler" placeholder="Pays de l'élève" class="border p-2 rounded w-full">
-                        <input type="date" wire:model.defer="form.date_in" class="border p-2 rounded w-full">
-                        <input type="date" wire:model.defer="form.date_out" class="border p-2 rounded w-full">
-                        <input type="file" wire:model="form.sign_Manager" class="border p-2 rounded w-full">
-                        <input type="file" wire:model="form.sign_Schuler" class="border p-2 rounded w-full">
-                        <input type="file" wire:model="form.image_Schuler" class="border p-2 rounded w-full">
-                    </div>
-
-                    <!-- Footer -->
-                    <div class="flex justify-end gap-2 border-t px-6 py-4">
-                        <button wire:click="closeFormModal" class="btn btn-secondary px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">
-                            Annuler
-                        </button>
-                        <button wire:click="saveFormulaire" class="btn btn-primary px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
-                            Enregistrer
-                        </button>
-                    </div>
-                </div>
-            </div>
-            @endif
-
+            <!-- Formulaires récents avec dropdown détails -->
             <div class="grid gap-4">
                 <h3 class="font-semibold">Formulaires récents</h3>
                 @foreach($filteredFormulaires as $f)
-                <div class="card p-4 hover:shadow-md transition-shadow flex justify-between">
-                    <div class="flex-1">
+                <div x-data="{ open: false }" class="card p-4 hover:shadow-md transition-shadow flex flex-col">
+                    <div class="flex justify-between items-center">
                         <h3 class="text-lg font-semibold text-gray-900">{{ $f->name_Schuler }}</h3>
+                        <button @click="open = !open" class="btn btn-secondary border-0">
+                            <i class="fa-solid fa-chevron-down" :class="{'rotate-180': open}"></i>
+                        </button>
                     </div>
-                    <div class="flex gap-2 ml-4">
-                        <button class="btn btn-secondary" wire:click="viewFolder({{ $f['id'] }})"><i class="fas fa-eye"></i></button>
+
+                    <!-- Dropdown détails -->
+                    <div x-show="open"
+                        x-transition
+                        class="mt-3 bg-gray-50 border-l-4 border-blue-400 pl-4 rounded-lg shadow-sm text-gray-700 text-sm space-y-2 p-4">
+                        <p><strong>Entreprise :</strong> {{ $f->name_Firma }}</p>
+                        <p><strong>Manager :</strong> {{ $f->name_Manager }}</p>
+                        <p><strong>Pays Élève :</strong> {{ $f->land_Schuler }}</p>
+                        <p><strong>Pays Entreprise :</strong> {{ $f->land_Firma }}</p>
+                        <p><strong>Date début :</strong> {{ $f->date_in }}</p>
+                        <p><strong>Date fin :</strong> {{ $f->date_out }}</p>
                     </div>
                 </div>
                 @endforeach
             </div>
         </div>
+
 
 
 

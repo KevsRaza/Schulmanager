@@ -135,8 +135,13 @@ class Dashboard extends Component
         try {
             Log::info('Récupération des élèves...');
 
-            $schulers = Schuler::with(['schule', 'firma', 'ausbildung'])
-                ->paginate(10); // Utilisation de la pagination
+            $query = Schuler::with(['schule', 'firma', 'ausbildung']);
+
+            // Appliquer le tri
+            $query->orderBy($this->schulerSortField, $this->schulerSortDirection);
+
+            // Pagination
+            $schulers = $query->paginate(10);
 
             Log::info('Élèves récupérés: ' . $schulers->count());
 
