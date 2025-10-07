@@ -416,13 +416,50 @@
                         </div>
                     </div>
 
-                    <button wire:click="openFormModal" class="btn btn-primary"><i class="fas fa-plus"></i>Nouveau</button>
+                    <button wire:click="openFormModal" class="btn btn-primary"><i class="fas fa-plus"></i>Ajouter Formulaire</button>
                 </div>
             </div>
 
             @if (session()->has('message'))
             <div class="p-2 bg-green-100 text-green-800 rounded">{{ session('message') }}</div>
             @endif
+
+            @if($showFormModal)
+            <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
+                    <!-- Header -->
+                    <div class="flex justify-between items-center border-b px-6 py-4">
+                        <h5 class="text-lg font-semibold">Nouveau Formulaire</h5>
+                        <button wire:click="closeFormModal" class="text-gray-500 hover:text-gray-700">&times;</button>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="px-6 py-4 space-y-3">
+                        <input type="text" wire:model.defer="form.name_Firma" placeholder="Nom de la société" class="border p-2 rounded w-full">
+                        <input type="text" wire:model.defer="form.name_Manager" placeholder="Nom du manager" class="border p-2 rounded w-full">
+                        <input type="text" wire:model.defer="form.land_Firma" placeholder="Pays de la société" class="border p-2 rounded w-full">
+                        <input type="text" wire:model.defer="form.name_Schuler" placeholder="Nom de l'élève" class="border p-2 rounded w-full">
+                        <input type="text" wire:model.defer="form.land_Schuler" placeholder="Pays de l'élève" class="border p-2 rounded w-full">
+                        <input type="date" wire:model.defer="form.date_in" class="border p-2 rounded w-full">
+                        <input type="date" wire:model.defer="form.date_out" class="border p-2 rounded w-full">
+                        <input type="file" wire:model="form.sign_Manager" class="border p-2 rounded w-full">
+                        <input type="file" wire:model="form.sign_Schuler" class="border p-2 rounded w-full">
+                        <input type="file" wire:model="form.image_Schuler" class="border p-2 rounded w-full">
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="flex justify-end gap-2 border-t px-6 py-4">
+                        <button wire:click="closeFormModal" class="btn btn-secondary px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">
+                            Annuler
+                        </button>
+                        <button wire:click="saveFormulaire" class="btn btn-primary px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+                            Enregistrer
+                        </button>
+                    </div>
+                </div>
+            </div>
+            @endif
+
 
             <!-- Formulaires récents avec dropdown détails -->
             <div class="grid gap-4">
