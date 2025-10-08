@@ -6,26 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-    public function up()
+    public function up(): void
     {
-        Schema::create('dossier_sous_dossier', function (Blueprint $table) {
-            $table->unsignedBigInteger('id_Dossier');
-            $table->unsignedBigInteger('id_SousDossier');
+        Schema::create('sous_dossiers', function (Blueprint $table) {
+            $table->increments('id_SousDossier'); // clé primaire
+            $table->string('name_SousDossier');
+            $table->unsignedBigInteger('id_Dossier'); // clé étrangère
+            $table->timestamps();
 
-            $table->foreign('id_Dossier')->references('id_Dossier')->on('dossier')->onDelete('cascade');
-            $table->foreign('id_SousDossier')->references('id_SousDossier')->on('sous_dossiers')->onDelete('cascade');
-
-            $table->primary(['id_Dossier', 'id_SousDossier']); // clé primaire composite
+            $table->foreign('id_Dossier')
+                ->references('id_Dossier')
+                ->on('dossier')
+                ->onDelete('cascade'); // supprime les sous-dossiers si dossier supprimé
         });
     }
 
-
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('sous_dossiers');

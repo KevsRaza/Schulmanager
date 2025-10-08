@@ -14,6 +14,7 @@ class Firma extends Model
     protected $fillable = [
         'name_Firma',
         'manager_Firma',
+        'land_Firma',
         'logo_Firma'
     ];
 }

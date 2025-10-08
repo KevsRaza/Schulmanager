@@ -7,6 +7,8 @@ use Livewire\WithPagination;
 use Livewire\WithFileUploads;
 use App\Models\Dossier;
 use App\Models\Schuler;
+use App\Models\Schule;
+use App\Models\Firma;
 use App\Models\Formulaire;
 use App\Models\SousDossier;
 use Illuminate\Support\Facades\Log;
@@ -19,24 +21,36 @@ class Dashboard extends Component
     public $layout = 'app';
     public $activeTab = 'Dossiers';
     public array $tabs = ['Dossiers', 'Élèves', 'Entreprises', 'Écoles', 'Formulaires'];
-
-    public $search = '';
-    public $schulerSearch = '';
-    public $formulaireSearch = '';
-    public $page = 1;
-
+    
     // Tri pour les formulaires
     public $formSortField = 'created_at'; // champ par défaut
     public $formSortDirection = 'desc';
+    public $formulaireSearch = '';
+    public $formulairesPage = 1;
 
     // Tri pour les dossiers
     public $dossierSortField = 'name_Dossier';
     public $dossierSortDirection = 'asc';
+    public $folderSearch = '';
+    public $foldersPage = 1;
 
     // Tri pour les élèves
-    public $schulerSortField = 'familiename';
+    public $schulerSortField = 'vorname';
     public $schulerSortDirection = 'asc';
+    public $schulerSearch = '';
+    public $schulersPage = 1;
 
+    // Tri pour les écoles
+    public $schuleSortField = 'name_Schule';
+    public $schuleSortDirection = 'asc';
+    public $schuleSearch = '';
+    public $schulePage = 1;
+
+    // Tri pour les entreprises
+    public $firmaSortField = 'name_Firma';
+    public $firmaSortDirection = 'asc';
+    public $firmaSearch = '';
+    public $firmaPage = 1;
 
     public $showFormModal = false;
     public $showFilterDropdown = false;
@@ -79,8 +93,13 @@ class Dashboard extends Component
         $query = Dossier::with(['sousDossiers'])
             ->withCount(['dokumente', 'ausbildungen', 'schulers', 'schulen', 'firmen', 'sousDossiers']);
 
-        if (!empty($this->search)) {
-            $query->where('name_Dossier', 'like', '%' . $this->search . '%');
+        if (!empty($this->folderSearch)) {
+            $query->where(function ($q) {
+                $q->where('name_Dossier', 'like', '%' . $this->folderSearch . '%')
+                    ->orWhereHas('sousDossiers', function ($q2) {
+                        $q2->where('name_SousDossier', 'like', '%' . $this->folderSearch . '%');
+                    });
+            });
         }
 
         return $query->orderBy($this->dossierSortField, $this->dossierSortDirection)
@@ -124,60 +143,42 @@ class Dashboard extends Component
         $this->dispatch('notify', message: "Voir dossier #{$id}", type: 'info');
     }
 
-
-
     //Dossiers
 
     //Schulers
 
     public function getSchulersProperty()
     {
-        try {
-            Log::info('Récupération des élèves...');
+        $query = Schuler::with(['schule', 'firma', 'ausbildung']);
 
-            $query = Schuler::with(['schule', 'firma', 'ausbildung']);
-
-            // Appliquer le tri
-            $query->orderBy($this->schulerSortField, $this->schulerSortDirection);
-
-            // Pagination
-            $schulers = $query->paginate(10);
-
-            Log::info('Élèves récupérés: ' . $schulers->count());
-
-            return $schulers->map(function ($schuler) {
-                return [
-                    'id' => $schuler->id_Schuler,
-                    'prenom' => $schuler->vorname ?? 'N/A',
-                    'nom' => $schuler->familiename ?? 'N/A',
-                    'email' => $schuler->email ?? 'N/A',
-                    'land_Schuler' => $schuler->land_Schuler ?? 'N/A',
-                    'deutschniveau_Schuler' => $schuler->deutschniveau_Schuler ?? 'N/A',
-                    'bildungsniveau_Schuler' => $schuler->bildungsniveau_Schuler ?? 'N/A',
-                    'date_debut' => $schuler->datum_Anfang_Ausbildung?->format('d/m/Y') ?? 'N/A',
-                    'date_fin' => $schuler->datum_Ende_Ausbildung?->format('d/m/Y') ?? 'N/A',
-                    'ecole' => $schuler->schule->name_Schule ?? 'Non assigné',
-                    'entreprise' => $schuler->firma->name_Firma ?? 'Non assigné',
-                    'formation' => $schuler->ausbildung->name_Ausbildung ?? 'Non assigné',
-                ];
+        if (!empty($this->schulerSearch)) {
+            $search = $this->schulerSearch;
+            $query->where(function ($q) use ($search) {
+                $q->where('vorname', 'like', "%{$search}%")
+                    ->orWhere('familiename', 'like', "%{$search}%");
             });
-        } catch (\Exception $e) {
-            Log::error('Erreur récupération élèves: ' . $e->getMessage());
-            return []; // Toujours retourner un tableau vide en cas d'erreur
         }
+
+        $query->orderBy($this->schulerSortField ?? 'familiename', $this->schulerSortDirection ?? 'asc');
+
+        return $query->paginate(10)->through(function ($schuler) {
+            return [
+                'id' => $schuler->id_Schuler,
+                'vorname' => $schuler->vorname ?? 'N/A',
+                'familiename' => $schuler->familiename ?? 'N/A',
+                'email' => $schuler->email ?? 'N/A',
+                'land_Schuler' => $schuler->land_Schuler ?? 'N/A',
+                'deutschniveau_Schuler' => $schuler->deutschniveau_Schuler ?? 'N/A',
+                'bildungsniveau_Schuler' => $schuler->bildungsniveau_Schuler ?? 'N/A',
+                'datum_Anfang_Ausbildung' => $schuler->datum_Anfang_Ausbildung?->format('d/m/Y') ?? 'N/A',
+                'datum_Ende_Ausbildung' => $schuler->datum_Ende_Ausbildung?->format('d/m/Y') ?? 'N/A',
+                'schule' => $schuler->schule->name_Schule ?? 'Non assigné',
+                'firma' => $schuler->firma->name_Firma ?? 'Non assigné',
+                'formation' => $schuler->ausbildung->name_Ausbildung ?? 'Non assigné',
+            ];
+        });
     }
 
-
-    public function getFilteredSchulersProperty()
-    {
-        return collect($this->schulers)->filter(function ($schuler) {
-            $search = strtolower($this->schulerSearch);
-            return stripos($schuler['prenom'] . ' ' . $schuler['nom'], $search) !== false ||
-                stripos($schuler['email'] ?? '', $search) !== false ||
-                stripos($schuler['ecole'] ?? '', $search) !== false ||
-                stripos($schuler['entreprise'] ?? '', $search) !== false;
-        })->values()->all();
-    }
 
     // Exemple pour schulers (même logique)
     public function sortSchulers($field)
@@ -232,9 +233,67 @@ class Dashboard extends Component
         }
     }
 
-
-
     //Schulers
+
+    //Entreprises
+
+    public function getFirmenProperty()
+    {
+        $query = Firma::query()
+            ->when($this->firmaSearch, function ($q) {
+                $q->where('name_Firma', 'like', '%' . $this->firmaSearch . '%')
+                    ->orWhere('manager_Firma', 'like', '%' . $this->firmaSearch . '%')
+                    ->orWhere('land_Firma', 'like', '%' . $this->firmaSearch . '%');
+            });
+
+        return $query
+            ->orderBy($this->firmaSortField, $this->firmaSortDirection)
+            ->paginate(10);
+    }
+
+    public function sortFirmen($field = 'name_Firma')
+    {
+        if ($this->firmaSortField === $field) {
+            $this->firmaSortDirection = $this->firmaSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->firmaSortField = $field;
+            $this->firmaSortDirection = 'asc';
+        }
+
+        $this->resetPage();
+    }
+
+    //Entreprises
+
+    //Ecoles
+
+    public function getSchulenProperty()
+    {
+        $query = Schule::with('dossier')
+            ->when($this->schuleSearch, function ($q) {
+                $q->where('name_Schule', 'like', '%' . $this->schuleSearch . '%')
+                    ->orWhere('land_Schule', 'like', '%' . $this->schuleSearch . '%')
+                    ->orWhere('name_Schulleiter', 'like', '%' . $this->schuleSearch . '%');
+            });
+
+        return $query
+            ->orderBy($this->schuleSortField, $this->schuleSortDirection)
+            ->paginate(10);
+    }
+
+    public function sortSchulen($field)
+    {
+        if ($this->schuleSortField === $field) {
+            $this->schuleSortDirection = $this->schuleSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->schuleSortField = $field;
+            $this->schuleSortDirection = 'asc';
+        }
+
+        $this->resetPage();
+    }
+
+    //Ecoles
 
     //Formulaires
 
@@ -315,23 +374,20 @@ class Dashboard extends Component
 
     public function getFilteredFormulairesProperty()
     {
-        // On applique le tri défini dans sortForms()
-        $query = Formulaire::orderBy($this->formSortField, $this->formSortDirection);
+        $query = Formulaire::query()
+            ->orderBy($this->formSortField, $this->formSortDirection);
 
-        $formulaires = $query->get();
-
-        // 🔎 Filtrage par recherche
         if (!empty($this->formulaireSearch)) {
-            $search = strtolower($this->formulaireSearch);
-
-            $formulaires = $formulaires->filter(function ($formulaire) use ($search) {
-                return stripos($formulaire->name_Schuler, $search) !== false
-                    || stripos($formulaire->name_Firma, $search) !== false;
+            $search = $this->formulaireSearch;
+            $query->where(function ($q) use ($search) {
+                $q->where('name_Schuler', 'like', "%{$search}%")
+                    ->orWhere('name_Firma', 'like', "%{$search}%");
             });
         }
 
-        return $formulaires->values(); // remet les index à plat
+        return $query->get();
     }
+
 
     public function sortForms($field)
     {
@@ -353,12 +409,13 @@ class Dashboard extends Component
     {
         $folders = $this->folders ?? collect();
         $schulers = $this->schulers ?? collect();
+        $firmen = $this->firmen ?? collect();
 
         return [
-            'total_dossiers' => $folders->count(),
-            'total_eleves' => $schulers->count(),
-            'total_ecoles' => count(array_unique(array_column($schulers->toArray(), 'ecole'))) ?: 0,
-            'total_entreprises' => count(array_unique(array_column($schulers->toArray(), 'entreprise'))) ?: 0,
+            'total_dossiers' => Dossier::count(),
+            'total_eleves' => Schuler::count(),
+            'total_entreprises' => Firma::count(),
+            'total_ecoles' => Schule::count(),
         ];
     }
 
@@ -373,30 +430,54 @@ class Dashboard extends Component
         $this->showSortDropdown = !$this->showSortDropdown;
     }
 
-    public function getTotalPagesProperty()
+    public function getTotalPagesFoldersProperty()
     {
         $filtered = $this->filteredFolders ?? [];
         return max(1, ceil(count($filtered) / 10));
     }
 
-    public function previousPage()
+    public function getTotalPagesSchulersProperty()
     {
-        if ($this->page > 1) {
-            $this->page--;
+        $filtered = $this->filteredSchulers ?? [];
+        return max(1, ceil(count($filtered) / 10));
+    }
+
+    public function getTotalPagesFirmenProperty()
+    {
+        $filtered = $this->filteredFirmen ?? [];
+        return max(1, ceil(count($filtered) / 10));
+    }
+
+    public function getTotalPagesSchulenProperty()
+    {
+        $filtered = $this->filteredSchulen ?? [];
+        return max(1, ceil(count($filtered) / 10));
+    }
+
+    public function getTotalPagesFormulairesProperty()
+    {
+        $filtered = $this->filteredFormulaires ?? [];
+        return max(1, ceil(count($filtered) / 10));
+    }
+
+    public function previousSchulerPage()
+    {
+        if ($this->schulersPage > 1) {
+            $this->schulersPage--;
         }
     }
 
-    public function nextPage()
+    public function nextSchulerPage()
     {
-        if ($this->page < $this->totalPages) {
-            $this->page++;
+        if ($this->schulersPage < $this->totalPagesSchulers) {
+            $this->schulersPage++;
         }
     }
 
-    public function goToPage($page)
+    public function gotoSchulerPage($page)
     {
-        $page = max(1, min($page, $this->totalPages));
-        $this->page = $page;
+        $page = max(1, min($page, $this->totalPagesSchulers));
+        $this->schulersPage = $page;
     }
 
     public function filterOption($option)
@@ -435,11 +516,11 @@ class Dashboard extends Component
         return view('livewire.dashboard', [
             'tabs' => $this->tabs,
             'folders' => $this->folders,
-            'totalPages' => $this->totalPages,
-            'page' => $this->page,
+            'totalPagesSchulers' => $this->totalPagesSchulers,
+            'schulersPage' => $this->schulersPage,
             'stats' => $this->stats,
             'filteredFormulaires' => $this->filteredFormulaires,
-            'filteredSchulers' => $this->filteredSchulers,
+            'schulers' => $this->schulers,
             'showSchulerModal' => $this->showSchulerModal,
         ]);
     }

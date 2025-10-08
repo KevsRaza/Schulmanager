@@ -80,7 +80,7 @@
                     <!-- Recherche -->
                     <div class="relative flex-1">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" wire:model.live="search"
+                        <input type="text" wire:model.live="folderSearch"
                             class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Rechercher un dossier...">
                     </div>
@@ -180,9 +180,6 @@
                                         <i class="fa-regular fa-folder-open text-gray-600 mr-1"></i>
                                         {{ $sous->name_SousDossier ?? 'Sous-dossier' }}
                                     </div>
-                                    <button class="text-blue-500 hover:text-blue-700">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
                                 </li>
 
                                 @endforeach
@@ -216,7 +213,7 @@
                 <div class="text-center py-12">
                     <i class="fas fa-folder-open text-4xl text-gray-300 mb-4"></i>
                     <p class="text-gray-500 text-lg">Aucun dossier trouvé</p>
-                    @if($search)<p class="text-gray-400 mt-2">Essayez de modifier vos critères de recherche</p>@endif
+                    @if($folderSearch)<p class="text-gray-400 mt-2">Essayez de modifier vos critères de recherche</p>@endif
                 </div>
                 @endif
             </div>
@@ -280,57 +277,110 @@
                 <!-- Modal pour ajouter un élève -->
                 @if($showSchulerModal)
                 <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                    <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
+                    <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl h-auto sm:h-[90vh] overflow-y-auto">
                         <!-- Header -->
                         <div class="flex justify-between items-center border-b px-6 py-4">
                             <h5 class="text-lg font-semibold">Nouvel Élève</h5>
-                            <button wire:click="closeSchulerModal" class="text-gray-500 hover:text-gray-700">
-                                &times;
-                            </button>
+                            <button wire:click="closeSchulerModal" class="text-gray-500 hover:text-gray-700">&times;</button>
                         </div>
 
-                        <!-- Body -->
-                        <div class="px-6 py-4 space-y-3">
-                            <input type="text" wire:model.defer="schuler.vorname" placeholder="Prénom" class="border p-2 rounded w-full">
-                            <input type="text" wire:model.defer="schuler.familiename" placeholder="Nom de famille" class="border p-2 rounded w-full">
-                            <input type="date" wire:model.defer="schuler.geburtsdatum_Schuler" class="border p-2 rounded w-full">
-                            <input type="text" wire:model.defer="schuler.land_Schuler" placeholder="Pays" class="border p-2 rounded w-full">
+                        <div class="space-y-6 px-6 py-4">
 
-                            <label for="deutschniveau_Schuler" class="block">Niveau d'allemand:</label>
-                            <select id="deutschniveau_Schuler" wire:model.defer="schuler.deutschniveau_Schuler" class="border p-2 rounded w-full">
-                                <option value="">Sélectionnez un niveau</option>
-                                <option value="A1">A1</option>
-                                <option value="A2">A2</option>
-                                <option value="B1">B1</option>
-                                <option value="B2">B2</option>
-                                <option value="C1">C1</option>
-                                <option value="C2">C2</option>
-                            </select>
+                            {{-- Bloc Nom --}}
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm space-y-4">
+                                <h3 class="text-sm font-bold uppercase text-gray-700">Élève</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Prénom</label>
+                                        <input type="text" wire:model.defer="schuler.vorname"
+                                            class="border border-gray-300 rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Nom</label>
+                                        <input type="text" wire:model.defer="schuler.familiename"
+                                            class="border border-gray-300 rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div class="sm:col-span-2">
+                                        <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Pays de l'élève</label>
+                                        <input type="text" wire:model.defer="schuler.land_Schuler"
+                                            class="border border-gray-300 rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div class="sm:col-span-2">
+                                        <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Date de naissance</label>
+                                        <input type="date" wire:model.defer="schuler.geburtsdatum_Schuler"
+                                            class="border border-gray-300 rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                </div>
+                            </div>
 
-                            <label for="bildungsniveau_Schuler" class="block">Niveau d'éducation:</label>
-                            <select id="bildungsniveau_Schuler" wire:model.defer="schuler.bildungsniveau_Schuler" class="border p-2 rounded w-full">
-                                <option value="">Sélectionnez un niveau</option>
-                                <option value="Primaire">Primaire</option>
-                                <option value="Secondaire">Secondaire</option>
-                                <option value="Universitaire">Universitaire</option>
-                                <option value="Professionnel">Professionnel</option>
-                            </select>
+                            {{-- Bloc A propos --}}
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm space-y-4">
+                                <h3 class="text-sm font-bold uppercase text-gray-700">Détails</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="deutschniveau_Schuler" class="block">Niveau d'allemand:</label>
+                                        <select id="deutschniveau_Schuler" wire:model.defer="schuler.deutschniveau_Schuler" class="border p-2 rounded w-full">
+                                            <option value="" style="display: none;">Open...</option>
+                                            <option value="A1">A1</option>
+                                            <option value="A2">A2</option>
+                                            <option value="B1">B1</option>
+                                            <option value="B2">B2</option>
+                                            <option value="C1">C1</option>
+                                            <option value="C2">C2</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="bildungsniveau_Schuler" class="block">Niveau d'éducation:</label>
+                                        <select id="bildungsniveau_Schuler" wire:model.defer="schuler.bildungsniveau_Schuler" class="border p-2 rounded w-full">
+                                            <option value="" style="display: none;">Open...</option>
+                                            <option value="Primaire">Primaire</option>
+                                            <option value="Secondaire">Secondaire</option>
+                                            <option value="Universitaire">Universitaire</option>
+                                            <option value="Professionnel">Professionnel</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
 
-                            <input type="date" wire:model.defer="schuler.datum_Anfang_Ausbildung" class="border p-2 rounded w-full">
-                            <input type="date" wire:model.defer="schuler.datum_Ende_Ausbildung" class="border p-2 rounded w-full">
-                            <input type="email" wire:model.defer="schuler.email" placeholder="Email" class="border p-2 rounded w-full">
-                        </div>
+                            {{-- Bloc Dates --}}
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm space-y-4">
+                                <h3 class="text-sm font-bold uppercase text-gray-700">Dates</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Date de début</label>
+                                        <input type="date" wire:model.defer="schuler.datum_Anfang_Ausbildung"
+                                            class="border border-gray-300 rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Date de fin</label>
+                                        <input type="date" wire:model.defer="schuler.datum_Ende_Ausbildung"
+                                            class="border border-gray-300 rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                </div>
+                            </div>
 
-                        <!-- Footer -->
-                        <div class="flex justify-end gap-2 border-t px-6 py-4">
-                            <button wire:click="closeSchulerModal" class="btn btn-secondary px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">
-                                Annuler
-                            </button>
-                            <button wire:click="saveSchuler" wire:loading.attr="disabled" class="btn btn-primary ...">
-                                <span wire:loading.remove>Enregistrer</span>
-                                <span wire:loading>Enregistrement...</span>
-                            </button>
+                            {{-- Bloc Email --}}
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm space-y-4">
+                                <h3 class="text-sm font-bold uppercase text-gray-700">Email</h3>
+                                <div class="sm:col-span-2">
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Email</label>
+                                        <input type="email" wire:model.defer="schuler.email"
+                                            class="border border-gray-300 rounded-md p-2 w-full">
+                                    </div>
+                                </div>
+                            </div>
 
+                            {{-- Boutons --}}
+                            <div class="flex justify-end gap-3">
+                                <button wire:click="closeSchulerModal"
+                                    class="px-4 py-2 rounded bg-gray-300 text-gray-700 font-bold hover:bg-gray-400 transition">Annuler</button>
+                                <button wire:click="saveSchuler" wire:loading.attr="disabled"
+                                    class="px-4 py-2 rounded bg-blue-500 text-white font-bold hover:bg-blue-600 transition">
+                                    <span wire:loading.remove>Enregistrer</span>
+                                    <span wire:loading>Enregistrement...</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -339,39 +389,43 @@
                 <div class="grid gap-4">
                     <h3 class="font-semibold">Élèves récents</h3>
 
-                    @foreach($filteredSchulers as $schuler)
-                    <div x-data="{ open: false }"
-                        class="card p-4 hover:shadow-md transition-shadow flex flex-col">
-
-                        <!-- En-tête de l'élève -->
+                    @forelse($schulers as $schuler)
+                    <div x-data="{ open: false }" class="card p-4 hover:shadow-md transition-shadow flex flex-col">
                         <div class="flex justify-between items-center">
                             <div>
                                 <h3 class="text-lg font-semibold text-gray-900">
-                                    {{ $schuler['prenom'] }} {{ $schuler['nom'] }}
+                                    {{ $schuler['vorname'] }}
+                                    {{ $schuler['familiename'] }}
                                 </h3>
-                                <p class="text-sm text-gray-500">{{ $schuler['email'] ?? 'Email non renseigné' }}</p>
+                                <p class="text-sm text-gray-500">{{ $schuler['email'] }}</p>
                             </div>
-                            <button @click="open = !open"
-                                class="btn btn-secondary border-0 flex items-center justify-center">
+                            <button @click="open = !open" class="btn btn-secondary border-0 flex items-center justify-center">
                                 <i class="fas fa-chevron-down transform transition-transform duration-300"
                                     :class="{'rotate-180': open}"></i>
                             </button>
                         </div>
 
-                        <!-- Détails déroulants -->
-                        <div x-show="open"
-                            x-transition
-                            class="mt-3 bg-gray-50 border-l-4 border-blue-400 pl-4 rounded-lg shadow-sm text-gray-700 text-sm space-y-2 p-4">
-                            <p><strong>Pays :</strong> {{ $schuler['land_Schuler'] ?? 'N/A' }}</p>
-                            <p><strong>Niveau d'allemand :</strong> {{ $schuler['deutschniveau_Schuler'] ?? 'N/A' }}</p>
-                            <p><strong>Niveau d'éducation :</strong> {{ $schuler['bildungsniveau_Schuler'] ?? 'N/A' }}</p>
-                            <p><strong>Date début :</strong> {{ $schuler['date_debut'] ?? 'N/A' }}</p>
-                            <p><strong>Date fin :</strong> {{ $schuler['date_fin'] ?? 'N/A' }}</p>
+                        <div x-show="open" x-transition class="mt-3 bg-gray-50 border-l-4 border-blue-400 pl-4 rounded-lg shadow-sm text-gray-700 text-sm space-y-2 p-4">
+                            <p><strong>Pays :</strong> {{ $schuler['land_Schuler'] }}</p>
+                            <p><strong>Niveau d'allemand :</strong> {{ $schuler['deutschniveau_Schuler'] }}</p>
+                            <p><strong>Niveau d'éducation :</strong> {{ $schuler['bildungsniveau_Schuler'] }}</p>
+                            <p><strong>Date début :</strong> {{ $schuler['datum_Anfang_Ausbildung'] }}</p>
+                            <p><strong>Date fin :</strong> {{ $schuler['datum_Ende_Ausbildung'] }}</p>
                         </div>
                     </div>
-                    @endforeach
-
+                    @empty
+                    <div class="text-center py-12">
+                        <i class="fas fa-user-graduate text-4xl text-gray-300 mb-4"></i>
+                        <p class="text-gray-500 text-lg">Aucun élève trouvé</p>
+                    </div>
+                    @endforelse
                 </div>
+
+                {{-- Pagination --}}
+                <div class="mt-4">
+                    {{ $schulers->links() }}
+                </div>
+
 
             </div>
         </div>
@@ -426,35 +480,103 @@
 
             @if($showFormModal)
             <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
+                <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl h-auto sm:h-[90vh] overflow-y-auto">
                     <!-- Header -->
                     <div class="flex justify-between items-center border-b px-6 py-4">
                         <h5 class="text-lg font-semibold">Nouveau Formulaire</h5>
                         <button wire:click="closeFormModal" class="text-gray-500 hover:text-gray-700">&times;</button>
                     </div>
 
-                    <!-- Body -->
-                    <div class="px-6 py-4 space-y-3">
-                        <input type="text" wire:model.defer="form.name_Firma" placeholder="Nom de la société" class="border p-2 rounded w-full">
-                        <input type="text" wire:model.defer="form.name_Manager" placeholder="Nom du manager" class="border p-2 rounded w-full">
-                        <input type="text" wire:model.defer="form.land_Firma" placeholder="Pays de la société" class="border p-2 rounded w-full">
-                        <input type="text" wire:model.defer="form.name_Schuler" placeholder="Nom de l'élève" class="border p-2 rounded w-full">
-                        <input type="text" wire:model.defer="form.land_Schuler" placeholder="Pays de l'élève" class="border p-2 rounded w-full">
-                        <input type="date" wire:model.defer="form.date_in" class="border p-2 rounded w-full">
-                        <input type="date" wire:model.defer="form.date_out" class="border p-2 rounded w-full">
-                        <input type="file" wire:model="form.sign_Manager" class="border p-2 rounded w-full">
-                        <input type="file" wire:model="form.sign_Schuler" class="border p-2 rounded w-full">
-                        <input type="file" wire:model="form.image_Schuler" class="border p-2 rounded w-full">
-                    </div>
+                    <div class="space-y-6 px-6 py-4">
 
-                    <!-- Footer -->
-                    <div class="flex justify-end gap-2 border-t px-6 py-4">
-                        <button wire:click="closeFormModal" class="btn btn-secondary px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">
-                            Annuler
-                        </button>
-                        <button wire:click="saveFormulaire" class="btn btn-primary px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
-                            Enregistrer
-                        </button>
+                        {{-- Bloc Société --}}
+                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm space-y-4">
+                            <h3 class="text-sm font-bold uppercase text-gray-700">Société</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Nom de la société</label>
+                                    <input type="text" wire:model.defer="form.name_Firma"
+                                        class="border border-gray-300 rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Pays de la société</label>
+                                    <input type="text" wire:model.defer="form.land_Firma"
+                                        class="border border-gray-300 rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Nom du manager</label>
+                                    <input type="text" wire:model.defer="form.name_Manager"
+                                        class="border border-gray-300 rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Bloc Élève --}}
+                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm space-y-4">
+                            <h3 class="text-sm font-bold uppercase text-gray-700">Élève</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Nom de l'élève</label>
+                                    <input type="text" wire:model.defer="form.name_Schuler"
+                                        class="border border-gray-300 rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Pays de l'élève</label>
+                                    <input type="text" wire:model.defer="form.land_Schuler"
+                                        class="border border-gray-300 rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Photo élève</label>
+                                <input type="file" wire:model="form.image_Schuler"
+                                    class="border border-gray-300 rounded-md p-2 w-full">
+                            </div>
+                        </div>
+
+                        {{-- Bloc Dates --}}
+                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm space-y-4">
+                            <h3 class="text-sm font-bold uppercase text-gray-700">Dates</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Date de début</label>
+                                    <input type="date" wire:model.defer="form.date_in"
+                                        class="border border-gray-300 rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Date de fin</label>
+                                    <input type="date" wire:model.defer="form.date_out"
+                                        class="border border-gray-300 rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Bloc Fichiers --}}
+                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm space-y-4">
+                            <h3 class="text-sm font-bold uppercase text-gray-700">Signatures et image</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Signature manager</label>
+                                    <input type="file" wire:model="form.sign_Manager"
+                                        class="border border-gray-300 rounded-md p-2 w-full">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Signature élève</label>
+                                    <input type="file" wire:model="form.sign_Schuler"
+                                        class="border border-gray-300 rounded-md p-2 w-full">
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Boutons --}}
+                        <div class="flex justify-end gap-3">
+                            <button wire:click="closeFormModal"
+                                class="px-4 py-2 rounded bg-gray-300 text-gray-700 font-bold hover:bg-gray-400 transition">Annuler</button>
+                            <button wire:click="saveFormulaire" wire:loading.attr="disabled"
+                                class="px-4 py-2 rounded bg-blue-500 text-white font-bold hover:bg-blue-600 transition">
+                                <span wire:loading.remove>Enregistrer</span>
+                                <span wire:loading>Enregistrement...</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -488,6 +610,130 @@
                 @endforeach
             </div>
         </div>
+
+
+
+
+
+
+        {{-- Entreprises Tab --}}
+        @elseif($activeTab==='Entreprises')
+        <div class="space-y-6">
+            <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                <!-- Recherche -->
+                <div class="relative flex-1">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" wire:model.live="firmaSearch"
+                        class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Rechercher une entreprise...">
+                </div>
+
+                <!-- Filtres / Tri -->
+                <div class="flex gap-2">
+
+                    <!-- Dropdown Filtres -->
+                    <div x-data="{ open: false }" class="relative">
+                        <button @click="open = !open" class="btn btn-secondary flex items-center gap-1">
+                            <i class="fas fa-filter"></i> Filtres
+                        </button>
+
+                        <div x-show="open"
+                            @click.away="open = false"
+                            class="absolute mt-2 bg-white border rounded shadow-lg w-48 z-50">
+                            <ul>
+                                <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Filtre 1</li>
+                                <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Filtre 2</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Dropdown Trier -->
+                    <div x-data="{ open: false }" class="relative">
+                        <button @click="open = !open" class="btn btn-secondary flex items-center gap-1">
+                            <i class="fas fa-sort"></i> Trier
+                        </button>
+
+                        <div x-show="open" @click.away="open = false"
+                            class="absolute mt-2 bg-white border rounded shadow-lg w-56 z-50">
+                            <ul>
+                                <li wire:click="sortFirmen"
+                                    class="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                                    Nom
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            @php $firmen = $this->firmen; @endphp
+
+            @if($firmen->count())
+            <div class="grid gap-4">
+                @foreach($firmen as $firma)
+                <div x-data="{ open: false }"
+                    class="card p-6 hover:shadow-md transition-shadow relative">
+
+                    <!-- En-tête -->
+                    <div class="flex justify-between items-center">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-gray-900">
+                                {{ $firma->name_Firma }}
+                            </h3>
+                        </div>
+
+                        <!-- Chevron -->
+                        <button @click="open = !open"
+                            class="btn btn-secondary border-0 flex items-center justify-center">
+                            <i class="fas fa-chevron-down transform transition-transform duration-300"
+                                :class="{'rotate-180': open}"></i>
+                        </button>
+                    </div>
+
+                    <!-- Contenu déroulant -->
+                    <div x-show="open"
+                        x-transition
+                        class="mt-4 pl-6 border-l-4 border-blue-200 bg-gray-50 rounded-lg p-4 shadow-inner">
+                        <ul class="space-y-2">
+                            <li class="p-2 pl-4 bg-white rounded shadow-sm flex items-center justify-between border-l-4 hover:bg-blue-100 border-transparent hover:border-blue-400 transition-all duration-200">
+                                <div>
+                                    <i class="fa-solid fa-user-tie text-gray-600 mr-1"></i>
+                                    {{ $firma->manager_Firma }}
+                                </div>
+                                <div>
+                                    <i class="fas fa-globe text-gray-600 mr-1"></i>
+                                    {{ $firma->land_Firma }}
+                                </div>
+                                @if($firma->id_Dossier)
+                                <div>
+                                    <i class="fa-regular fa-folder-open text-gray-600 mr-1"></i>
+                                    {{ $firma->id_Dossier }}
+                                </div>
+                                @endif
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                @endforeach
+
+            </div>
+
+            {{-- Pagination --}}
+            {{ $firmen->links() }}
+
+            @else
+            <div class="text-center py-12">
+                <i class="fas fa-folder-open text-4xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500 text-lg">Aucune entreprise trouvée</p>
+                @if($firmaSearch)<p class="text-gray-400 mt-2">Essayez de modifier vos critères de recherche</p>@endif
+            </div>
+            @endif
+        </div>
+
+
+
 
 
 
