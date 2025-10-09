@@ -21,7 +21,7 @@ class Dashboard extends Component
     public $layout = 'app';
     public $activeTab = 'Dossiers';
     public array $tabs = ['Dossiers', 'Élèves', 'Entreprises', 'Écoles', 'Formulaires'];
-    
+
     // Tri pour les formulaires
     public $formSortField = 'created_at'; // champ par défaut
     public $formSortDirection = 'desc';
@@ -44,7 +44,7 @@ class Dashboard extends Component
     public $schuleSortField = 'name_Schule';
     public $schuleSortDirection = 'asc';
     public $schuleSearch = '';
-    public $schulePage = 1;
+    public $schulenPage = 1;
 
     // Tri pour les entreprises
     public $firmaSortField = 'name_Firma';
@@ -86,182 +86,178 @@ class Dashboard extends Component
 
     // Propriété pour chaques méthodes
 
-    //Dossiers
+    //Folders
 
-    public function getFoldersProperty()
-    {
-        $query = Dossier::with(['sousDossiers'])
-            ->withCount(['dokumente', 'ausbildungen', 'schulers', 'schulen', 'firmen', 'sousDossiers']);
+        public function getFoldersProperty()
+        {
+            $query = Dossier::with(['sousDossiers'])
+                ->withCount(['dokumente', 'ausbildungen', 'schulers', 'schulen', 'firmen', 'sousDossiers']);
 
-        if (!empty($this->folderSearch)) {
-            $query->where(function ($q) {
-                $q->where('name_Dossier', 'like', '%' . $this->folderSearch . '%')
-                    ->orWhereHas('sousDossiers', function ($q2) {
-                        $q2->where('name_SousDossier', 'like', '%' . $this->folderSearch . '%');
-                    });
-            });
+            if (!empty($this->folderSearch)) {
+                $query->where(function ($q) {
+                    $q->where('name_Dossier', 'like', '%' . $this->folderSearch . '%')
+                        ->orWhereHas('sousDossiers', function ($q2) {
+                            $q2->where('name_SousDossier', 'like', '%' . $this->folderSearch . '%');
+                        });
+                });
+            }
+
+            return $query->orderBy($this->dossierSortField, $this->dossierSortDirection)
+                ->paginate(10);
         }
 
-        return $query->orderBy($this->dossierSortField, $this->dossierSortDirection)
-            ->paginate(10);
-    }
+        public function getFilteredFoldersProperty()
+        {
+            $folders = $this->folders ?? collect();
 
+            if (!empty($this->search)) {
+                $folders = $folders->filter(function ($folder) {
+                    return stripos($folder->name_Dossier, $this->search) !== false;
+                });
+            }
 
-    public function getFilteredFoldersProperty()
-    {
-        $folders = $this->folders ?? collect();
-
-        if (!empty($this->search)) {
-            $folders = $folders->filter(function ($folder) {
-                return stripos($folder->name_Dossier, $this->search) !== false;
-            });
+            return $folders;
         }
 
-        return $folders;
-    }
-
-    public function sortDossiersByName()
-    {
-        $this->dossierSortDirection = $this->dossierSortDirection === 'asc' ? 'desc' : 'asc';
-    }
-
-    // --- méthode appelée par le dropdown ---
-    public function sortDossiers($field)
-    {
-        if ($this->dossierSortField === $field) {
+        public function sortDossiersByName()
+        {
             $this->dossierSortDirection = $this->dossierSortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            $this->dossierSortField = $field;
-            $this->dossierSortDirection = 'asc';
         }
 
-        $this->resetPage();
-    }
+        public function sortDossiers($field)
+        {
+            if ($this->dossierSortField === $field) {
+                $this->dossierSortDirection = $this->dossierSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                $this->dossierSortField = $field;
+                $this->dossierSortDirection = 'asc';
+            }
 
-    public function viewFolder($id)
-    {
-        $this->dispatch('notify', message: "Voir dossier #{$id}", type: 'info');
-    }
+            $this->resetPage();
+        }
 
-    //Dossiers
+        public function viewFolder($id)
+        {
+            $this->dispatch('notify', message: "Voir dossier #{$id}", type: 'info');
+        }
+
+    //Folders
 
     //Schulers
 
-    public function getSchulersProperty()
-    {
-        $query = Schuler::with(['schule', 'firma', 'ausbildung']);
+        public function getSchulersProperty()
+        {
+            $query = Schuler::with(['schule', 'firma', 'ausbildung']);
 
-        if (!empty($this->schulerSearch)) {
-            $search = $this->schulerSearch;
-            $query->where(function ($q) use ($search) {
-                $q->where('vorname', 'like', "%{$search}%")
-                    ->orWhere('familiename', 'like', "%{$search}%");
+            if (!empty($this->schulerSearch)) {
+                $search = $this->schulerSearch;
+                $query->where(function ($q) use ($search) {
+                    $q->where('vorname', 'like', "%{$search}%")
+                        ->orWhere('familiename', 'like', "%{$search}%");
+                });
+            }
+
+            $query->orderBy($this->schulerSortField ?? 'familiename', $this->schulerSortDirection ?? 'asc');
+
+            return $query->paginate(10)->through(function ($schuler) {
+                return [
+                    'id' => $schuler->id_Schuler,
+                    'vorname' => $schuler->vorname ?? 'N/A',
+                    'familiename' => $schuler->familiename ?? 'N/A',
+                    'email' => $schuler->email ?? 'N/A',
+                    'land_Schuler' => $schuler->land_Schuler ?? 'N/A',
+                    'deutschniveau_Schuler' => $schuler->deutschniveau_Schuler ?? 'N/A',
+                    'bildungsniveau_Schuler' => $schuler->bildungsniveau_Schuler ?? 'N/A',
+                    'datum_Anfang_Ausbildung' => $schuler->datum_Anfang_Ausbildung?->format('d/m/Y') ?? 'N/A',
+                    'datum_Ende_Ausbildung' => $schuler->datum_Ende_Ausbildung?->format('d/m/Y') ?? 'N/A',
+                    'schule' => $schuler->schule->name_Schule ?? 'Non assigné',
+                    'firma' => $schuler->firma->name_Firma ?? 'Non assigné',
+                    'formation' => $schuler->ausbildung->name_Ausbildung ?? 'Non assigné',
+                ];
             });
         }
 
-        $query->orderBy($this->schulerSortField ?? 'familiename', $this->schulerSortDirection ?? 'asc');
-
-        return $query->paginate(10)->through(function ($schuler) {
-            return [
-                'id' => $schuler->id_Schuler,
-                'vorname' => $schuler->vorname ?? 'N/A',
-                'familiename' => $schuler->familiename ?? 'N/A',
-                'email' => $schuler->email ?? 'N/A',
-                'land_Schuler' => $schuler->land_Schuler ?? 'N/A',
-                'deutschniveau_Schuler' => $schuler->deutschniveau_Schuler ?? 'N/A',
-                'bildungsniveau_Schuler' => $schuler->bildungsniveau_Schuler ?? 'N/A',
-                'datum_Anfang_Ausbildung' => $schuler->datum_Anfang_Ausbildung?->format('d/m/Y') ?? 'N/A',
-                'datum_Ende_Ausbildung' => $schuler->datum_Ende_Ausbildung?->format('d/m/Y') ?? 'N/A',
-                'schule' => $schuler->schule->name_Schule ?? 'Non assigné',
-                'firma' => $schuler->firma->name_Firma ?? 'Non assigné',
-                'formation' => $schuler->ausbildung->name_Ausbildung ?? 'Non assigné',
-            ];
-        });
-    }
-
-
-    // Exemple pour schulers (même logique)
-    public function sortSchulers($field)
-    {
-        $allowed = ['vorname', 'familiename', 'id_Schuler'];
-        $this->schulerSortField = in_array($field, $allowed) ? $field : 'familiename';
-        $this->schulerSortDirection = $this->schulerSortDirection === 'asc' ? 'desc' : 'asc';
-        $this->resetPage();
-    }
-
-    public function openSchulerModal()
-    {
-        $this->reset('schuler'); // Réinitialiser les champs du formulaire
-        $this->showSchulerModal = true; // Ouvrir le modal
-    }
-
-    public function closeSchulerModal()
-    {
-        $this->showSchulerModal = false; // Fermer le modal
-    }
-
-    public function saveSchuler()
-    {
-        try {
-            // Validation
-            $this->validate([
-                'schuler.vorname' => 'required|string|max:255',
-                'schuler.familiename' => 'required|string|max:255',
-                'schuler.geburtsdatum_Schuler' => 'required|date',
-                'schuler.land_Schuler' => 'required|string|max:255',
-                'schuler.deutschniveau_Schuler' => 'required|string|max:255',
-                'schuler.bildungsniveau_Schuler' => 'required|string|max:255',
-                'schuler.datum_Anfang_Ausbildung' => 'required|date',
-                'schuler.datum_Ende_Ausbildung' => 'required|date',
-                'schuler.email' => 'required|email|max:255',
-            ]);
-
-            // Création de l'élève
-            Schuler::create($this->schuler);
-
-            // Message de succès
-            session()->flash('message', 'Élève enregistré avec succès !');
-
-            // Réinitialiser le formulaire
-            $this->reset('schuler');
-
-            // Fermer le modal
-            $this->closeSchulerModal();
-        } catch (\Exception $e) {
-            Log::error('Erreur lors de l\'enregistrement de l\'élève: ' . $e->getMessage());
-            session()->flash('error', 'Une erreur est survenue lors de l\'enregistrement de l\'élève.');
+        public function sortSchulers($field)
+        {
+            $allowed = ['vorname', 'familiename', 'id_Schuler'];
+            $this->schulerSortField = in_array($field, $allowed) ? $field : 'familiename';
+            $this->schulerSortDirection = $this->schulerSortDirection === 'asc' ? 'desc' : 'asc';
+            $this->resetPage();
         }
-    }
+
+        public function openSchulerModal()
+        {
+            $this->reset('schuler'); // Réinitialiser les champs du formulaire
+            $this->showSchulerModal = true; // Ouvrir le modal
+        }
+
+        public function closeSchulerModal()
+        {
+            $this->showSchulerModal = false; // Fermer le modal
+        }
+
+        public function saveSchuler()
+        {
+            try {
+                // Validation
+                $this->validate([
+                    'schuler.vorname' => 'required|string|max:255',
+                    'schuler.familiename' => 'required|string|max:255',
+                    'schuler.geburtsdatum_Schuler' => 'required|date',
+                    'schuler.land_Schuler' => 'required|string|max:255',
+                    'schuler.deutschniveau_Schuler' => 'required|string|max:255',
+                    'schuler.bildungsniveau_Schuler' => 'required|string|max:255',
+                    'schuler.datum_Anfang_Ausbildung' => 'required|date',
+                    'schuler.datum_Ende_Ausbildung' => 'required|date',
+                    'schuler.email' => 'required|email|max:255',
+                ]);
+
+                // Création de l'élève
+                Schuler::create($this->schuler);
+
+                // Message de succès
+                session()->flash('message', 'Élève enregistré avec succès !');
+
+                // Réinitialiser le formulaire
+                $this->reset('schuler');
+
+                // Fermer le modal
+                $this->closeSchulerModal();
+            } catch (\Exception $e) {
+                Log::error('Erreur lors de l\'enregistrement de l\'élève: ' . $e->getMessage());
+                session()->flash('error', 'Une erreur est survenue lors de l\'enregistrement de l\'élève.');
+            }
+        }
 
     //Schulers
 
     //Entreprises
 
-    public function getFirmenProperty()
-    {
-        $query = Firma::query()
-            ->when($this->firmaSearch, function ($q) {
-                $q->where('name_Firma', 'like', '%' . $this->firmaSearch . '%')
-                    ->orWhere('manager_Firma', 'like', '%' . $this->firmaSearch . '%')
-                    ->orWhere('land_Firma', 'like', '%' . $this->firmaSearch . '%');
-            });
+        public function getFirmenProperty()
+        {
+            $query = Firma::query()
+                ->when($this->firmaSearch, function ($q) {
+                    $q->where('name_Firma', 'like', '%' . $this->firmaSearch . '%')
+                        ->orWhere('manager_Firma', 'like', '%' . $this->firmaSearch . '%')
+                        ->orWhere('land_Firma', 'like', '%' . $this->firmaSearch . '%');
+                });
 
-        return $query
-            ->orderBy($this->firmaSortField, $this->firmaSortDirection)
-            ->paginate(10);
-    }
-
-    public function sortFirmen($field = 'name_Firma')
-    {
-        if ($this->firmaSortField === $field) {
-            $this->firmaSortDirection = $this->firmaSortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            $this->firmaSortField = $field;
-            $this->firmaSortDirection = 'asc';
+            return $query
+                ->orderBy($this->firmaSortField, $this->firmaSortDirection)
+                ->paginate(10);
         }
 
-        $this->resetPage();
-    }
+        public function sortFirmen($field = 'name_Firma')
+        {
+            if ($this->firmaSortField === $field) {
+                $this->firmaSortDirection = $this->firmaSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                $this->firmaSortField = $field;
+                $this->firmaSortDirection = 'asc';
+            }
+
+            $this->resetPage();
+        }
 
     //Entreprises
 
@@ -297,109 +293,105 @@ class Dashboard extends Component
 
     //Formulaires
 
-    public function openFormModal()
-    {
-        $this->reset('form'); // réinitialise les champs du formulaire
-        $this->showFormModal = true; // ouvre le modal
-    }
-
-    public function closeFormModal()
-    {
-        $this->showFormModal = false;
-    }
-
-    public function saveFormulaire()
-    {
-        // validation
-        $this->validate([
-            'form.name_Firma' => 'required|string',
-            'form.name_Manager' => 'required|string',
-            'form.land_Firma' => 'required|string',
-            'form.name_Schuler' => 'required|string',
-            'form.land_Schuler' => 'required|string',
-            'form.date_in' => 'required|date',
-            'form.date_out' => 'required|date',
-            'form.sign_Manager' => 'required|file|mimes:jpg,png,pdf',
-            'form.sign_Schuler' => 'required|file|mimes:jpg,png,pdf',
-            'form.image_Schuler' => 'required|image|mimes:jpg,png',
-        ]);
-
-        // Upload des fichiers et calcul des hash
-        if ($this->form['sign_Manager']) {
-            $signManagerPath = $this->form['sign_Manager']->store('signatures', 'public');
-            $signManagerHash = md5_file(storage_path('app/public/' . $signManagerPath));
-        } else {
-            $signManagerPath = null;
-            $signManagerHash = null;
+        public function openFormModal()
+        {
+            $this->reset('form'); // réinitialise les champs du formulaire
+            $this->showFormModal = true; // ouvre le modal
         }
 
-        if ($this->form['sign_Schuler']) {
-            $signSchulerPath = $this->form['sign_Schuler']->store('signatures', 'public');
-            $signSchulerHash = md5_file(storage_path('app/public/' . $signSchulerPath));
-        } else {
-            $signSchulerPath = null;
-            $signSchulerHash = null;
+        public function closeFormModal()
+        {
+            $this->showFormModal = false;
         }
 
-        if ($this->form['image_Schuler']) {
-            $imageSchulerPath = $this->form['image_Schuler']->store('images', 'public');
-            $imageSchulerHash = md5_file(storage_path('app/public/' . $imageSchulerPath));
-        } else {
-            $imageSchulerPath = null;
-            $imageSchulerHash = null;
+        public function saveFormulaire()
+        {
+            // validation
+            $this->validate([
+                'form.name_Firma' => 'required|string',
+                'form.name_Manager' => 'required|string',
+                'form.land_Firma' => 'required|string',
+                'form.name_Schuler' => 'required|string',
+                'form.land_Schuler' => 'required|string',
+                'form.date_in' => 'required|date',
+                'form.date_out' => 'required|date',
+                'form.sign_Manager' => 'required|file|mimes:jpg,png,pdf',
+                'form.sign_Schuler' => 'required|file|mimes:jpg,png,pdf',
+                'form.image_Schuler' => 'required|image|mimes:jpg,png',
+            ]);
+
+            // Upload des fichiers et calcul des hash
+            if ($this->form['sign_Manager']) {
+                $signManagerPath = $this->form['sign_Manager']->store('signatures', 'public');
+                $signManagerHash = md5_file(storage_path('app/public/' . $signManagerPath));
+            } else {
+                $signManagerPath = null;
+                $signManagerHash = null;
+            }
+
+            if ($this->form['sign_Schuler']) {
+                $signSchulerPath = $this->form['sign_Schuler']->store('signatures', 'public');
+                $signSchulerHash = md5_file(storage_path('app/public/' . $signSchulerPath));
+            } else {
+                $signSchulerPath = null;
+                $signSchulerHash = null;
+            }
+
+            if ($this->form['image_Schuler']) {
+                $imageSchulerPath = $this->form['image_Schuler']->store('images', 'public');
+                $imageSchulerHash = md5_file(storage_path('app/public/' . $imageSchulerPath));
+            } else {
+                $imageSchulerPath = null;
+                $imageSchulerHash = null;
+            }
+
+            // Création du formulaire
+            \App\Models\Formulaire::create([
+                'name_Firma' => $this->form['name_Firma'],
+                'name_Manager' => $this->form['name_Manager'],
+                'land_Firma' => $this->form['land_Firma'],
+                'name_Schuler' => $this->form['name_Schuler'],
+                'land_Schuler' => $this->form['land_Schuler'],
+                'date_in' => $this->form['date_in'],
+                'date_out' => $this->form['date_out'],
+                'sign_Manager' => $signManagerPath,
+                'sign_Manager_hash' => $signManagerHash,
+                'sign_Schuler' => $signSchulerPath,
+                'sign_Schuler_hash' => $signSchulerHash,
+                'image_Schuler' => $imageSchulerPath,
+                'image_Schuler_hash' => $imageSchulerHash,
+            ]);
+
+            session()->flash('message', 'Formulaire enregistré avec succès !');
+
+            // Réinitialiser le formulaire
+            $this->closeFormModal();
         }
 
-        // Création du formulaire
-        \App\Models\Formulaire::create([
-            'name_Firma' => $this->form['name_Firma'],
-            'name_Manager' => $this->form['name_Manager'],
-            'land_Firma' => $this->form['land_Firma'],
-            'name_Schuler' => $this->form['name_Schuler'],
-            'land_Schuler' => $this->form['land_Schuler'],
-            'date_in' => $this->form['date_in'],
-            'date_out' => $this->form['date_out'],
-            'sign_Manager' => $signManagerPath,
-            'sign_Manager_hash' => $signManagerHash,
-            'sign_Schuler' => $signSchulerPath,
-            'sign_Schuler_hash' => $signSchulerHash,
-            'image_Schuler' => $imageSchulerPath,
-            'image_Schuler_hash' => $imageSchulerHash,
-        ]);
+        public function getFormulairesProperty()
+        {
+            $query = Formulaire::query()
+                ->when($this->formulaireSearch, function ($q) {
+                    $q->where('name_Schuler', 'like', '%' . $this->formulaireSearch . '%')
+                        ->orWhere('name_Firma', 'like', '%' . $this->formulaireSearch . '%');
+                });
 
-        session()->flash('message', 'Formulaire enregistré avec succès !');
-
-        // Réinitialiser le formulaire
-        $this->closeFormModal();
-    }
-
-    public function getFilteredFormulairesProperty()
-    {
-        $query = Formulaire::query()
-            ->orderBy($this->formSortField, $this->formSortDirection);
-
-        if (!empty($this->formulaireSearch)) {
-            $search = $this->formulaireSearch;
-            $query->where(function ($q) use ($search) {
-                $q->where('name_Schuler', 'like', "%{$search}%")
-                    ->orWhere('name_Firma', 'like', "%{$search}%");
-            });
+            return $query
+                ->orderBy($this->formSortField, $this->formSortDirection)
+                ->paginate(5); // Ajustez le nombre de résultats par page si nécessaire
         }
 
-        return $query->get();
-    }
-
-
-    public function sortForms($field)
-    {
-        // Si on clique sur le même champ, on inverse la direction
-        if ($this->formSortField === $field) {
-            $this->formSortDirection = $this->formSortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            // Sinon on change de champ et on met asc par défaut
-            $this->formSortField = $field;
-            $this->formSortDirection = 'asc';
+        public function sortForms($field)
+        {
+            // Si on clique sur le même champ, on inverse la direction
+            if ($this->formSortField === $field) {
+                $this->formSortDirection = $this->formSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                // Sinon on change de champ et on met asc par défaut
+                $this->formSortField = $field;
+                $this->formSortDirection = 'asc';
+            }
         }
-    }
 
     //Formulaires
 
@@ -480,6 +472,88 @@ class Dashboard extends Component
         $this->schulersPage = $page;
     }
 
+
+    public function previousSchulenPage()
+    {
+        if ($this->schulenPage > 1) {
+            $this->schulenPage--;
+        }
+    }
+
+    public function nextSchulenPage()
+    {
+        if ($this->schulenPage < $this->totalPagesSchulen) {
+            $this->schulenPage++;
+        }
+    }
+
+    public function gotoSchulenPage($page)
+    {
+        $page = max(1, min($page, $this->totalPagesSchulen));
+        $this->schulenPage = $page;
+    }
+
+
+    public function previousFoldersPage()
+    {
+        if ($this->foldersPage > 1) {
+            $this->foldersPage--;
+        }
+    }
+
+    public function nextFoldersPage()
+    {
+        if ($this->foldersPage < $this->totalPagesFolders) {
+            $this->foldersPage++;
+        }
+    }
+
+    public function gotoFoldersPage($page)
+    {
+        $page = max(1, min($page, $this->totalPagesFolders));
+        $this->foldersPage = $page;
+    }
+
+    public function previousFormulairesPage()
+    {
+        if ($this->formulairesPage > 1) {
+            $this->formulairesPage--;
+        }
+    }
+
+    public function nextFormulairesPage()
+    {
+        if ($this->formulairesPage < $this->totalPagesFormulaires) {
+            $this->formulairesPage++;
+        }
+    }
+
+    public function gotoFormulairesPage($page)
+    {
+        $page = max(1, min($page, $this->totalPagesFormulaires));
+        $this->formulairesPage = $page;
+    }
+
+    public function previousFirmaPage()
+    {
+        if ($this->firmaPage > 1) {
+            $this->firmaPage--;
+        }
+    }
+
+    public function nextFirmaPage()
+    {
+        if ($this->firmaPage < $this->totalPagesFirmen) {
+            $this->firmaPage++;
+        }
+    }
+
+    public function gotoFirmaPage($page)
+    {
+        $page = max(1, min($page, $this->totalPagesFirmen));
+        $this->firmaPage = $page;
+    }
+
     public function filterOption($option)
     {
         // appliquer le filtre choisi
@@ -515,12 +589,21 @@ class Dashboard extends Component
     {
         return view('livewire.dashboard', [
             'tabs' => $this->tabs,
-            'folders' => $this->folders,
-            'totalPagesSchulers' => $this->totalPagesSchulers,
-            'schulersPage' => $this->schulersPage,
             'stats' => $this->stats,
-            'filteredFormulaires' => $this->filteredFormulaires,
+            'folders' => $this->folders,
+            'formulaires' => $this->formulaires,
             'schulers' => $this->schulers,
+            'firmen' => $this->firmen,
+            'schulen' => $this->schulen,
+            'totalPagesSchulers' => $this->totalPagesSchulers,
+            'totalPagesSchulen' => $this->totalPagesSchulen,
+            'totalPagesForlders' => $this->totalPagesFolders,
+            'totalPagesFormulaires' => $this->totalPagesFormulaires,
+            'totalPagesFirmen' => $this->totalPagesFirmen,
+            'schulersPage' => $this->schulersPage,
+            'schulenPage' => $this->schulenPage,
+            'firmaPage' => $this->firmaPage,
+            'formulairesPage' => $this->formulairesPage,
             'showSchulerModal' => $this->showSchulerModal,
         ]);
     }

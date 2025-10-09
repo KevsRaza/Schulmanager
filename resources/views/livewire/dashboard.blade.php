@@ -584,9 +584,10 @@
 
 
             <!-- Formulaires récents avec dropdown détails -->
+            @if($formulaires->count())
             <div class="grid gap-4">
                 <h3 class="font-semibold">Formulaires récents</h3>
-                @foreach($filteredFormulaires as $f)
+                @foreach($formulaires as $f)
                 <div x-data="{ open: false }" class="card p-4 hover:shadow-md transition-shadow flex flex-col">
                     <div class="flex justify-between items-center">
                         <h3 class="text-lg font-semibold text-gray-900">{{ $f->name_Schuler }}</h3>
@@ -609,6 +610,16 @@
                 </div>
                 @endforeach
             </div>
+            {{-- Pagination --}}
+            {{ $formulaires->links() }}
+
+            @else
+            <div class="text-center py-12">
+                <i class="fas fa-folder-open text-4xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500 text-lg">Aucune entreprise trouvée</p>
+                @if($formulaireSearch)<p class="text-gray-400 mt-2">Essayez de modifier vos critères de recherche</p>@endif
+            </div>
+            @endif
         </div>
 
 
@@ -663,9 +674,7 @@
                             </ul>
                         </div>
                     </div>
-
                 </div>
-
             </div>
 
             @php $firmen = $this->firmen; @endphp
@@ -738,7 +747,107 @@
 
 
 
-        {{-- Autres Tabs --}}
+        {{-- Écoles Tab --}}
+        @elseif($activeTab==='Écoles')
+        <div class="space-y-6">
+            <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                <!-- Recherche -->
+                <div class="relative flex-1">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" wire:model.live="schuleSearch"
+                        class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Rechercher une école...">
+                </div>
+
+                <!-- Filtres / Tri -->
+                <div class="flex gap-2">
+                    <!-- Dropdown Filtres -->
+                    <div x-data="{ open: false }" class="relative">
+                        <button @click="open = !open" class="btn btn-secondary flex items-center gap-1">
+                            <i class="fas fa-filter"></i> Filtres
+                        </button>
+                        <div x-show="open" @click.away="open = false"
+                            class="absolute mt-2 bg-white border rounded shadow-lg w-48 z-50">
+                            <ul>
+                                <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Filtre 1</li>
+                                <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Filtre 2</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Dropdown Trier -->
+                    <div x-data="{ open: false }" class="relative">
+                        <button @click="open = !open" class="btn btn-secondary flex items-center gap-1">
+                            <i class="fas fa-sort"></i> Trier
+                        </button>
+                        <div x-show="open" @click.away="open = false"
+                            class="absolute mt-2 bg-white border rounded shadow-lg w-56 z-50">
+                            <ul>
+                                <li wire:click="sortSchulen('name_Schule')"
+                                    class="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                                    Nom
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @php $schulen = $this->schulen; @endphp
+
+            @if($schulen->count())
+            <div class="grid gap-4">
+                @foreach($schulen as $schule)
+                <div x-data="{ open: false }"
+                    class="card p-6 hover:shadow-md transition-shadow relative">
+                    <div class="flex justify-between items-center">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-gray-900">
+                                {{ $schule->name_Schule }}
+                            </h3>
+                        </div>
+                        <button @click="open = !open"
+                            class="btn btn-secondary border-0 flex items-center justify-center">
+                            <i class="fas fa-chevron-down transform transition-transform duration-300"
+                                :class="{'rotate-180': open}"></i>
+                        </button>
+                    </div>
+
+                    <div x-show="open" x-transition
+                        class="mt-4 pl-6 border-l-4 border-blue-200 bg-gray-50 rounded-lg p-4 shadow-inner">
+                        <ul class="space-y-2">
+                            <li
+                                class="p-2 pl-4 bg-white rounded shadow-sm flex items-center justify-between border-l-4 hover:bg-blue-100 border-transparent hover:border-blue-400 transition-all duration-200">
+                                <div>
+                                    <i class="fa-solid fa-user-tie text-gray-600 mr-1"></i>
+                                    {{ $schule->name_Schulleiter }}
+                                </div>
+                                <div>
+                                    <i class="fas fa-globe text-gray-600 mr-1"></i>
+                                    {{ $schule->land_Schule }}
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+
+            {{-- Pagination --}}
+            {{ $schulen->links() }}
+
+            @else
+            <div class="text-center py-12">
+                <i class="fas fa-folder-open text-4xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500 text-lg">Aucune école trouvée</p>
+                @if($schuleSearch)
+                <p class="text-gray-400 mt-2">Essayez de modifier vos critères de recherche</p>
+                @endif
+            </div>
+            @endif
+        </div>
+
+{{-- Autres Tabs --}}
         @else
         <div class="text-center py-12">
             <i class="fas fa-cogs text-4xl text-gray-400 mb-4"></i>
@@ -746,6 +855,7 @@
             <p class="text-gray-600">Cette fonctionnalité sera bientôt disponible.</p>
         </div>
         @endif
+    </div>
     </div>
 
 
