@@ -28,9 +28,8 @@ class Schuler extends Model
         'email',
         'id_Firma',
         'id_Schule',
-        'id_Ausbildung',
         'id_Dokument',
-        'id_Dossier',
+        'idAutorite',
     ];
 
     public function schule()
@@ -43,19 +42,19 @@ class Schuler extends Model
         return $this->belongsTo(Firma::class, 'id_Firma', 'id_Firma');
     }
 
-    public function ausbildung()
-    {
-        return $this->belongsTo(Ausbildung::class, 'id_Ausbildung', 'id_Ausbildung');
-    }
-
     public function dokument()
     {
         return $this->belongsTo(Dokument::class, 'id_Dokument', 'id_dokument');
     }
 
-    public function dossier()
+    public function autorites()
     {
-        return $this->belongsTo(Dossier::class, 'id_Dossier', 'id_Dossier');
+        return $this->belongsTo(Autorites::class, 'idAutorite', 'idAutorite');
+    }
+
+    public function land()
+    {
+        return $this->belongsTo(Land::class, 'idLand', 'idLand');
     }
 
     // Méthode pour obtenir le nom complet de l'élève

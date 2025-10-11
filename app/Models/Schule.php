@@ -13,13 +13,11 @@ class Schule extends Model
 
     protected $fillable = [
         'name_Schule',
-        'land_Schule',
-        'name_Schulleiter',
-        'id_Dossier'
+        'name_Schulleiter'
     ];
 
-    public function dossier(): BelongsTo
+    public function land(): BelongsTo
     {
-        return $this->belongsTo(Dossier::class, 'id_Dossier');
+        return $this->belongsTo(Land::class, 'idLand');
     }
 }

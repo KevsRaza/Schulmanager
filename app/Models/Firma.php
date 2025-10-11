@@ -14,7 +14,13 @@ class Firma extends Model
     protected $fillable = [
         'name_Firma',
         'manager_Firma',
-        'land_Firma',
-        'logo_Firma'
+        'logo_Firma',
+        'idAutorite',
+        'idLand'
     ];
+
+    public function land()
+    {
+        return $this->hasMany(Land::class, 'idLand', 'idLand');
+    }
 }

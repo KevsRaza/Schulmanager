@@ -14,8 +14,8 @@
         <div class="card p-6 flex items-center justify-between 
         {{ $activeTab === 'Dossiers' ? 'bg-blue-300' : '' }}">
             <div>
-                <p class="text-sm">Total Dossiers</p>
-                <p class="text-2xl font-bold">{{ $stats['total_dossiers'] ?? 0 }}</p>
+                <p class="text-sm">Total Pays</p>
+                <p class="text-2xl font-bold">{{ $stats['total_lands'] ?? 0 }}</p>
             </div>
             <i class="fas fa-folder text-2xl opacity-80"></i>
         </div>
@@ -25,7 +25,7 @@
         {{ $activeTab === 'Élèves' ? 'bg-blue-300' : '' }}">
             <div>
                 <p class="text-gray-600 text-sm">Élèves</p>
-                <p class="text-2xl font-bold text-gray-900">{{ $stats['total_eleves'] ?? 0 }}</p>
+                <p class="text-2xl font-bold text-gray-900">{{ $stats['total_schulers'] ?? 0 }}</p>
             </div>
             <i class="fas fa-users text-blue-500 text-2xl"></i>
         </div>
@@ -34,8 +34,8 @@
         <div class="card p-6 flex items-center justify-between 
                     {{ $activeTab === 'Entreprises' ? 'bg-blue-300' : '' }}">
             <div>
-                <p class="text-gray-600 text-sm">Entreprises</p>
-                <p class="text-2xl font-bold text-gray-900">{{ $stats['total_entreprises'] ?? 0 }}</p>
+                <p class="text-gray-600 text-sm">Firmen</p>
+                <p class="text-2xl font-bold text-gray-900">{{ $stats['total_firmen'] ?? 0 }}</p>
             </div>
             <i class="fas fa-building text-purple-500 text-2xl"></i>
         </div>
@@ -44,8 +44,8 @@
         <div class="card p-6 flex items-center justify-between 
                     {{ $activeTab === 'Écoles' ? 'bg-blue-300' : '' }}">
             <div>
-                <p class="text-gray-600 text-sm">Écoles</p>
-                <p class="text-2xl font-bold text-gray-900">{{ $stats['total_ecoles'] ?? 0 }}</p>
+                <p class="text-gray-600 text-sm">Schulen</p>
+                <p class="text-2xl font-bold text-gray-900">{{ $stats['total_schulen'] ?? 0 }}</p>
             </div>
             <i class="fas fa-school text-green-500 text-2xl"></i>
         </div>
@@ -60,10 +60,10 @@
                 <button wire:click="setActiveTab('{{ $tab }}')"
                     class="flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-colors
                                     {{ $activeTab === $tab ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
-                    @if($tab==='Dossiers') <i class="fas fa-folder"></i>
-                    @elseif($tab==='Élèves') <i class="fas fa-users"></i>
-                    @elseif($tab==='Écoles') <i class="fas fa-school"></i>
-                    @elseif($tab==='Entreprises') <i class="fas fa-building"></i>
+                    @if($tab==='Land') <i class="fas fa-folder"></i>
+                    @elseif($tab==='Schuler') <i class="fas fa-users"></i>
+                    @elseif($tab==='Schule') <i class="fas fa-school"></i>
+                    @elseif($tab==='Firma') <i class="fas fa-building"></i>
                     @elseif($tab==='Formulaires') <i class="fas fa-file"></i>
                     @endif
                     {{ $tab }}
@@ -73,16 +73,16 @@
         </div>
 
         <div class="p-6">
-            {{-- Dossiers Tab --}}
-            @if($activeTab==='Dossiers')
+            {{-- Land Tab --}}
+            @if($activeTab==='Land')
             <div class="space-y-6">
                 <div class="flex flex-col sm:flex-row gap-4 mb-6">
                     <!-- Recherche -->
                     <div class="relative flex-1">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" wire:model.live="folderSearch"
+                        <input type="text" wire:model.live="LandSearch"
                             class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Rechercher un dossier...">
+                            placeholder="Rechercher un pays...">
                     </div>
 
                     <!-- Filtres / Tri -->
@@ -113,7 +113,7 @@
                             <div x-show="open" @click.away="open = false"
                                 class="absolute mt-2 bg-white border rounded shadow-lg w-56 z-50">
                                 <ul>
-                                    <li wire:click="sortDossiersByName"
+                                    <li wire:click="sortLandByName"
                                         class="px-4 py-2 hover:bg-gray-100 cursor-pointer">
                                         Nom
                                     </li>
@@ -125,11 +125,11 @@
 
                 </div>
 
-                @php $foldersToDisplay = $folders ?? collect(); @endphp
+                @php $landsToDisplay = $lands ?? collect(); @endphp
 
-                @if($foldersToDisplay->count())
+                @if($landsToDisplay->count())
                 <div class="grid gap-4">
-                    @foreach($foldersToDisplay as $folder)
+                    @foreach($landsToDisplay as $land)
                     <div x-data="{ open: false }"
                         class="card p-6 hover:shadow-md transition-shadow relative">
 
@@ -137,27 +137,8 @@
                         <div class="flex justify-between items-center">
                             <div class="flex-1">
                                 <h3 class="text-lg font-semibold text-gray-900">
-                                    {{ $folder['name_Dossier'] }}
+                                    {{ $land['nameLand'] }}
                                 </h3>
-
-                                <div class="flex flex-wrap gap-2 mt-3">
-                                    <span class="badge badge-blue">
-                                        <i class="fas fa-file mr-1"></i>
-                                        {{ $folder->sous_dossiers_count ?? 0 }} docs
-                                    </span>
-                                    <span class="badge badge-green">
-                                        <i class="fas fa-users mr-1"></i>
-                                        {{ $folder->schulers_count ?? 0 }} élèves
-                                    </span>
-                                    <span class="badge badge-purple">
-                                        <i class="fas fa-school mr-1"></i>
-                                        {{ $folder->schulen_count ?? 0 }} écoles
-                                    </span>
-                                    <span class="badge badge-yellow">
-                                        <i class="fas fa-building mr-1"></i>
-                                        {{ $folder->firmen_count ?? 0 }} entreprises
-                                    </span>
-                                </div>
                             </div>
 
                             <!-- Chevron -->
@@ -169,31 +150,13 @@
                         </div>
 
                         <!-- Contenu déroulant -->
-                        <div x-show="open"
-                            x-transition
-                            class="mt-4 pl-6 border-l-4 border-blue-200 bg-gray-50 rounded-lg p-4 shadow-inner">
-                            @if($folder->sousDossiers->count())
-                            <ul class="space-y-2">
-                                @foreach($folder->sousDossiers as $sous)
-                                <li class="p-2 pl-4 bg-white rounded shadow-sm flex items-center justify-between border-l-4 hover:bg-blue-100 border-transparent hover:border-blue-400 transition-all duration-200">
-                                    <div>
-                                        <i class="fa-regular fa-folder-open text-gray-600 mr-1"></i>
-                                        {{ $sous->name_SousDossier ?? 'Sous-dossier' }}
-                                    </div>
-                                </li>
-
-                                @endforeach
-                            </ul>
-                            @else
-                            <p class="text-gray-500 italic">Aucun sous-dossier</p>
-                            @endif
-                        </div>
+                        
                     </div>
                     @endforeach
 
                 </div>
 
-                {{ $folders->links() }}
+                {{ $lands->links() }}
 
                 {{-- Pagination --}}
                 @if(($totalPages ?? 1) > 1)
@@ -212,7 +175,7 @@
                 @else
                 <div class="text-center py-12">
                     <i class="fas fa-folder-open text-4xl text-gray-300 mb-4"></i>
-                    <p class="text-gray-500 text-lg">Aucun dossier trouvé</p>
+                    <p class="text-gray-500 text-lg">Aucun pays trouvé</p>
                     @if($folderSearch)<p class="text-gray-400 mt-2">Essayez de modifier vos critères de recherche</p>@endif
                 </div>
                 @endif
@@ -627,8 +590,8 @@
 
 
 
-        {{-- Entreprises Tab --}}
-        @elseif($activeTab==='Entreprises')
+        {{-- Firmen Tab --}}
+        @elseif($activeTab==='Firma')
         <div class="space-y-6">
             <div class="flex flex-col sm:flex-row gap-4 mb-6">
                 <!-- Recherche -->
@@ -715,10 +678,10 @@
                                     <i class="fas fa-globe text-gray-600 mr-1"></i>
                                     {{ $firma->land_Firma }}
                                 </div>
-                                @if($firma->id_Dossier)
+                                @if($firma->idLand)
                                 <div>
                                     <i class="fa-regular fa-folder-open text-gray-600 mr-1"></i>
-                                    {{ $firma->id_Dossier }}
+                                    {{ $firma->nameLand }}
                                 </div>
                                 @endif
                             </li>

@@ -12,14 +12,6 @@ class Dokument extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'name_Dokument',
-        'dokumentTyp',
-        'weg_Dokument',
-        'id_Dossier'
+        'nameVisa',
     ];
-
-    public function dossier(): BelongsTo
-    {
-        return $this->belongsTo(Dossier::class, 'id_Dossier');
-    }
 }
