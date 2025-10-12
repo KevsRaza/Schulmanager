@@ -4,7 +4,7 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
             <h2 class="text-xl font-bold text-gray-900">Dashboard</h2>
-            <p class="text-gray-600">Gestion complète de votre établissement</p>
+            <p class="text-gray-600">Vollständige erwaltung ihrer einrichtung</p>
         </div>
     </div>
 
@@ -14,7 +14,7 @@
         <div class="card p-6 flex items-center justify-between 
         {{ $activeTab === 'Dossiers' ? 'bg-blue-300' : '' }}">
             <div>
-                <p class="text-sm">Total Pays</p>
+                <p class="text-sm">Länder</p>
                 <p class="text-2xl font-bold">{{ $stats['total_lands'] ?? 0 }}</p>
             </div>
             <i class="fas fa-folder text-2xl opacity-80"></i>
@@ -24,7 +24,7 @@
         <div class="card p-6 flex items-center justify-between 
         {{ $activeTab === 'Élèves' ? 'bg-blue-300' : '' }}">
             <div>
-                <p class="text-gray-600 text-sm">Élèves</p>
+                <p class="text-gray-600 text-sm">Schulers</p>
                 <p class="text-2xl font-bold text-gray-900">{{ $stats['total_schulers'] ?? 0 }}</p>
             </div>
             <i class="fas fa-users text-blue-500 text-2xl"></i>
@@ -82,7 +82,7 @@
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                         <input type="text" wire:model.live="LandSearch"
                             class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Rechercher un pays...">
+                            placeholder="Ein Land suchen...">
                     </div>
 
                     <!-- Filtres / Tri -->
@@ -107,7 +107,7 @@
                         <!-- Dropdown Trier -->
                         <div x-data="{ open: false }" class="relative">
                             <button @click="open = !open" class="btn btn-secondary flex items-center gap-1">
-                                <i class="fas fa-sort"></i> Trier
+                                <i class="fas fa-sort"></i> Sortieren
                             </button>
 
                             <div x-show="open" @click.away="open = false"
@@ -150,7 +150,7 @@
                         </div>
 
                         <!-- Contenu déroulant -->
-                        
+
                     </div>
                     @endforeach
 
@@ -182,7 +182,7 @@
             </div>
 
             {{-- Élèves Tab --}}
-            @elseif($activeTab === 'Élèves')
+            @elseif($activeTab === 'Schuler')
             <div class="space-y-6">
                 <div class="flex flex-col sm:flex-row gap-4 mb-6">
                     <!-- Recherche -->
@@ -190,7 +190,7 @@
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                         <input type="text" wire:model="schulerSearch"
                             class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Rechercher un élève...">
+                            placeholder="Einen Schüler suchen...">
                     </div>
 
                     <!-- Filtres / Tri -->
@@ -215,7 +215,7 @@
                         <!-- Dropdown Trier -->
                         <div x-data="{ open: false }" class="relative">
                             <button @click="open = !open" class="btn btn-secondary flex items-center gap-1">
-                                <i class="fas fa-sort"></i> Trier
+                                <i class="fas fa-sort"></i> Sortieren
                             </button>
 
                             <div x-show="open"
@@ -265,12 +265,12 @@
                                     </div>
                                     <div class="sm:col-span-2">
                                         <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Pays de l'élève</label>
-                                        <input type="text" wire:model.defer="schuler.land_Schuler"
+                                        <input type="text" wire:model.defer="schuler.landSchuler"
                                             class="border border-gray-300 rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                     </div>
                                     <div class="sm:col-span-2">
                                         <label class="block text-xs font-bold uppercase text-gray-600 mb-1">Date de naissance</label>
-                                        <input type="date" wire:model.defer="schuler.geburtsdatum_Schuler"
+                                        <input type="date" wire:model.defer="schuler.geburtsdatumSchuler"
                                             class="border border-gray-300 rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                     </div>
                                 </div>
@@ -350,7 +350,7 @@
                 @endif
 
                 <div class="grid gap-4">
-                    <h3 class="font-semibold">Élèves récents</h3>
+                    <h3 class="font-semibold">Aktuelle Schüler</h3>
 
                     @forelse($schulers as $schuler)
                     <div x-data="{ open: false }" class="card p-4 hover:shadow-md transition-shadow flex flex-col">
@@ -369,11 +369,11 @@
                         </div>
 
                         <div x-show="open" x-transition class="mt-3 bg-gray-50 border-l-4 border-blue-400 pl-4 rounded-lg shadow-sm text-gray-700 text-sm space-y-2 p-4">
-                            <p><strong>Pays :</strong> {{ $schuler['land_Schuler'] }}</p>
-                            <p><strong>Niveau d'allemand :</strong> {{ $schuler['deutschniveau_Schuler'] }}</p>
-                            <p><strong>Niveau d'éducation :</strong> {{ $schuler['bildungsniveau_Schuler'] }}</p>
-                            <p><strong>Date début :</strong> {{ $schuler['datum_Anfang_Ausbildung'] }}</p>
-                            <p><strong>Date fin :</strong> {{ $schuler['datum_Ende_Ausbildung'] }}</p>
+                            <p><strong>Pays :</strong> {{ $schuler['landSchuler'] }}</p>
+                            <p><strong>Niveau d'allemand :</strong> {{ $schuler['deutschniveauSchuler'] }}</p>
+                            <p><strong>Niveau d'éducation :</strong> {{ $schuler['bildungsniveauSchuler'] }}</p>
+                            <p><strong>Date début :</strong> {{ $schuler['datumAnfangAusbildung'] }}</p>
+                            <p><strong>Date fin :</strong> {{ $schuler['datumEndeAusbildung'] }}</p>
                         </div>
                     </div>
                     @empty
@@ -423,7 +423,7 @@
                     <!-- Dropdown Trier -->
                     <div x-data="{ open: false }" class="relative">
                         <button @click="open = !open" class="btn btn-secondary flex items-center gap-1">
-                            <i class="fas fa-sort"></i> Trier
+                            <i class="fas fa-sort"></i> Sortieren
                         </button>
                         <div x-show="open" @click.away="open = false" class="absolute mt-2 bg-white border rounded shadow-lg w-56 z-50">
                             <ul>
@@ -599,7 +599,7 @@
                     <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                     <input type="text" wire:model.live="firmaSearch"
                         class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Rechercher une entreprise...">
+                        placeholder="Ein Unternehmen suchen...">
                 </div>
 
                 <!-- Filtres / Tri -->
@@ -624,7 +624,7 @@
                     <!-- Dropdown Trier -->
                     <div x-data="{ open: false }" class="relative">
                         <button @click="open = !open" class="btn btn-secondary flex items-center gap-1">
-                            <i class="fas fa-sort"></i> Trier
+                            <i class="fas fa-sort"></i> Sortieren
                         </button>
 
                         <div x-show="open" @click.away="open = false"
@@ -719,7 +719,7 @@
                     <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                     <input type="text" wire:model.live="schuleSearch"
                         class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Rechercher une école...">
+                        placeholder="Eine Schule suchen...">
                 </div>
 
                 <!-- Filtres / Tri -->
@@ -741,7 +741,7 @@
                     <!-- Dropdown Trier -->
                     <div x-data="{ open: false }" class="relative">
                         <button @click="open = !open" class="btn btn-secondary flex items-center gap-1">
-                            <i class="fas fa-sort"></i> Trier
+                            <i class="fas fa-sort"></i> Sortieren
                         </button>
                         <div x-show="open" @click.away="open = false"
                             class="absolute mt-2 bg-white border rounded shadow-lg w-56 z-50">
@@ -810,7 +810,7 @@
             @endif
         </div>
 
-{{-- Autres Tabs --}}
+        {{-- Autres Tabs --}}
         @else
         <div class="text-center py-12">
             <i class="fas fa-cogs text-4xl text-gray-400 mb-4"></i>
@@ -819,7 +819,7 @@
         </div>
         @endif
     </div>
-    </div>
+</div>
 
 
 </div>

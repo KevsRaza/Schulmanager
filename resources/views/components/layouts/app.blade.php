@@ -94,10 +94,10 @@
         <div class="max-w-7xl mx-auto flex justify-between items-center bg-gray-200 p-4 rounded-md">
             <h1 class="text-2xl font-bold text-gray-900">{{ $title ?? 'SCHULEMANAGER' }}</h1>
             <nav class="flex gap-4">
-                <a href="{{ route('dashboard') }}" class="text-blue-600 font-medium">Dashboard</a>
+                <a href="{{ route('dashboard') }}" class="text-blue-600 font-medium">Startseite</a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" class="text-blue-600 font-medium">Logout</button>
+                    <button type="submit" class="text-blue-600 font-medium">Abmelden</button>
                 </form>
             </nav>
         </div>

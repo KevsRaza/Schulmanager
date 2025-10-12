@@ -5,6 +5,7 @@ namespace App\Http\Livewire;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
+use Carbon\Carbon;
 use App\Models\Autorites;
 use App\Models\Dokumente;
 use App\Models\Firma;
@@ -12,6 +13,7 @@ use App\Models\Land;
 use App\Models\Schule;
 use App\Models\Schuler;
 use App\Models\Formulaire;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 
 class Dashboard extends Component
@@ -36,6 +38,7 @@ class Dashboard extends Component
     public $landPage = 1;
 
     // Tri pour les schuler
+    public $csvFile;
     public $schulerSortField = 'vorname';
     public $schulerSortDirection = 'asc';
     public $schulerSearch = '';
@@ -83,61 +86,65 @@ class Dashboard extends Component
     {
         $this->activeTab = $tab;
         $this->resetPage(); // reset pagination si nécessaire
+
+        if ($tab === 'Schuler') {
+        $this->importSchulersFromCsv();
+        }
     }
 
     // Propriété pour chaques méthodes
 
     //Land
 
-        public function getLandProperty()
-        {
-            $query = Land::with(['schulen']) // Charger les écoles associées
-                ->withCount(['schulen']);    // Compter le nombre d’écoles par pays
+    public function getLandProperty()
+    {
+        $query = Land::with(['schulen']) // Charger les écoles associées
+            ->withCount(['schulen']);    // Compter le nombre d’écoles par pays
 
-            // Filtrage (si tu cherches un pays)
-            if (!empty($this->landSearch)) {
-                $query->where('nameLand', 'like', '%' . $this->landSearch . '%');
-            }
-
-            return $query
-                ->orderBy($this->landSortField ?? 'nameLand', $this->landSortDirection ?? 'asc')
-                ->paginate(10);
+        // Filtrage (si tu cherches un pays)
+        if (!empty($this->landSearch)) {
+            $query->where('nameLand', 'like', '%' . $this->landSearch . '%');
         }
 
-        public function getFilteredLandsProperty()
-        {
-            $lands = $this->land ?? collect();
+        return $query
+            ->orderBy($this->landSortField ?? 'nameLand', $this->landSortDirection ?? 'asc')
+            ->paginate(10);
+    }
 
-            if (!empty($this->search)) {
-                $lands = $lands->filter(function ($land) {
-                    return stripos($land->nameLand, $this->search) !== false;
-                });
-            }
+    public function getFilteredLandsProperty()
+    {
+        $lands = $this->land ?? collect();
 
-            return $lands;
+        if (!empty($this->search)) {
+            $lands = $lands->filter(function ($land) {
+                return stripos($land->nameLand, $this->search) !== false;
+            });
         }
 
-        public function sortLandsByName()
-        {
+        return $lands;
+    }
+
+    public function sortLandsByName()
+    {
+        $this->landSortDirection = $this->landSortDirection === 'asc' ? 'desc' : 'asc';
+    }
+
+    public function sortLands($field)
+    {
+        if ($this->landSortField === $field) {
             $this->landSortDirection = $this->landSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->landSortField = $field;
+            $this->landSortDirection = 'asc';
         }
 
-        public function sortLands($field)
-        {
-            if ($this->landSortField === $field) {
-                $this->landSortDirection = $this->landSortDirection === 'asc' ? 'desc' : 'asc';
-            } else {
-                $this->landSortField = $field;
-                $this->landSortDirection = 'asc';
-            }
+        $this->resetPage();
+    }
 
-            $this->resetPage();
-        }
-
-        public function viewLand($id)
-        {
-            $this->dispatch('notify', message: "Voir le pays #{$id}", type: 'info');
-        }
+    public function viewLand($id)
+    {
+        $this->dispatch('notify', message: "Voir le pays #{$id}", type: 'info');
+    }
 
     //Land
 
@@ -163,17 +170,70 @@ class Dashboard extends Component
                 'vorname' => $schuler->vorname ?? 'N/A',
                 'familiename' => $schuler->familiename ?? 'N/A',
                 'email' => $schuler->email ?? 'N/A',
-                'land_Schuler' => $schuler->land_Schuler ?? 'N/A',
-                'deutschniveau_Schuler' => $schuler->deutschniveau_Schuler ?? 'N/A',
-                'bildungsniveau_Schuler' => $schuler->bildungsniveau_Schuler ?? 'N/A',
-                'datum_Anfang_Ausbildung' => $schuler->datum_Anfang_Ausbildung?->format('d/m/Y') ?? 'N/A',
-                'datum_Ende_Ausbildung' => $schuler->datum_Ende_Ausbildung?->format('d/m/Y') ?? 'N/A',
+                'landSchuler' => $schuler->landSchuler ?? 'N/A',
+                'deutschniveauSchuler' => $schuler->deutschniveauSchuler ?? 'N/A',
+                'bildungsniveauSchuler' => $schuler->bildungsniveauSchuler ?? 'N/A',
+                'datumAnfangAusbildung' => $schuler->datumAnfangAusbildung
+    ? Carbon::parse($schuler->datumAnfangAusbildung)->format('d/m/Y')
+    : 'N/A',
+
+'datumEndeAusbildung' => $schuler->datumEndeAusbildung
+    ? Carbon::parse($schuler->datumEndeAusbildung)->format('d/m/Y')
+    : 'N/A',
                 'schule' => $schuler->schule->name_Schule ?? 'Non assigné',
                 'firma' => $schuler->firma->name_Firma ?? 'Non assigné',
                 'pays' => $schuler->land->nameLand ?? 'Non assigné',
             ];
         });
     }
+
+    public function importSchulersFromCsv()
+    {
+        // 📁 Chemin du CSV sur le serveur
+        $fullPath = storage_path('app/data/schuler.csv');
+
+        if (!file_exists($fullPath)) {
+            session()->flash('error', 'Le fichier CSV est introuvable : ' . $fullPath);
+            return;
+        }
+
+        if (($handle = fopen($fullPath, 'r')) !== false) {
+            $header = fgetcsv($handle, 1000, ';'); // <-- Séparateur point-virgule
+
+            while (($data = fgetcsv($handle, 1000, ';')) !== false) {
+                $row = array_combine($header, $data);
+
+                \App\Models\Schuler::updateOrCreate(
+                    ['email' => $row['email']],
+                    [
+                        'vorname' => $row['vorname'] ?? null,
+                        'familiename' => $row['familiename'] ?? null,
+                        'geburtsdatumSchuler' => $this->convertDate($row['geburtstag'] ?? null),
+                        'landSchuler' => $row['landSchuler'] ?? null,
+                        'deutschniveauSchuler' => $row['deutschniveauSchuler'] ?? null,
+                        'bildungsniveauSchuler' => $row['bildungsniveauSchuler'] ?? null,
+                        'datumAnfangAusbildung' => $this->convertDate($row['datumAnfangAusbildung'] ?? null),
+                        'datumEndeAusbildung' => $this->convertDate($row['datumEndeAusbildung'] ?? null),
+                    ]
+                );
+            }
+            fclose($handle);
+        }
+        $this->resetPage();
+    }
+
+    // 🔧 Convertit les dates du format "dd/mm/yyyy" en "yyyy-mm-dd"
+    private function convertDate($date)
+    {
+        if (!$date) return null;
+        $parts = explode('/', $date);
+        if (count($parts) === 3) {
+            return "{$parts[2]}-{$parts[1]}-{$parts[0]}";
+        }
+        return $date;
+    }
+
+
 
     public function sortSchulers($field)
     {
