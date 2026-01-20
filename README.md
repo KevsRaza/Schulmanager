@@ -1,4 +1,4 @@
-# 🎓 School Management Dashboard
+# 🎓 SCHULMANAGER
 
 ![version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![license](https://img.shields.io/badge/license-MIT-green.svg)
@@ -6,14 +6,16 @@
 ![Livewire](https://img.shields.io/badge/Livewire-3-purple.svg)
 ![Tailwind](https://img.shields.io/badge/TailwindCSS-3-blue.svg)
 
-A modern **School Management Dashboard** built with **Laravel, Livewire, Alpine.js and Tailwind CSS**.  
+A modern german **School Management** built with **Laravel, Livewire, Alpine.js and Tailwind CSS**.  
 This project focuses on managing schools with real-time search, sorting, pagination and a clean dashboard UI.
 
 ---
 
 ## 📸 Preview
 
-![Dashboard Preview](screenshots/dashboard.png)
+![Login Preview](screenshots/Login.png)
+![Dashboard Preview](screenshots/Dashboard.png)
+![Form Preview](screenshots/AddStudentForm.png)
 
 ---
 
@@ -94,5 +96,5 @@ You can run the project locally following the instructions below.
 ### 1️⃣ Clone the repository
 
 ```bash
-git clone https://github.com/your-username/school-management-dashboard.git
+git clone https://github.com/KevsRaza/Schulmanager.git
 cd school-management-dashboard
