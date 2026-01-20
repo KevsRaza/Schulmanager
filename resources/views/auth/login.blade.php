@@ -50,7 +50,7 @@
         </div>
 
         <div class="login-footer mt-8 text-center text-gray-500 text-sm">
-            <p>powered by PS-Solutions4You UG</p>
+            <p>Powered by Kevin RAZA</p>
         </div>
     </div>
 @endsection

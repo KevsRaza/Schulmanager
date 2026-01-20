@@ -7,8 +7,8 @@
         </div>
     </div>
     <div class="flex gap-2">
-        <button class="btn btn-secondary"><i class="fas fa-filter"></i> Filtres</button>
-        <button class="btn btn-secondary"><i class="fas fa-sort"></i> Trier</button>
+        <button class="btn btn-secondary"><i class="fas fa-filter"></i> Filtern</button>
+        <button class="btn btn-secondary"><i class="fas fa-sort"></i> Sortieren</button>
     </div>
 </div>
 

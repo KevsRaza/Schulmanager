@@ -26,7 +26,7 @@ class Dashboard extends Component
     public array $tabs = ['Land', 'Schuler', 'Firma', 'Schule', 'Formulaires'];
 
     // Tri pour les formulaires
-    public $formSortField = 'created_at'; // champ par défaut
+    public $formSortField = 'created_at';
     public $formSortDirection = 'desc';
     public $formulaireSearch = '';
     public $formulairesPage = 1;
@@ -43,6 +43,8 @@ class Dashboard extends Component
     public $schulerSortDirection = 'asc';
     public $schulerSearch = '';
     public $schulersPage = 1;
+    public $importMessage = '';
+    public $showImportModal = false;
 
     // Tri pour les schule
     public $schuleSortField = 'name_Schule';
@@ -59,8 +61,8 @@ class Dashboard extends Component
     public $showFormModal = false;
     public $showFilterDropdown = false;
     public $showSortDropdown = false;
-    public $showSchulerModal = false; // Pour le modal des élèves
-    public $schuler = []; // Données de l'élève
+    public $showSchulerModal = false;
+    public $schuler = [];
 
     public $form = [
         'name_Firma' => '',
@@ -85,29 +87,22 @@ class Dashboard extends Component
     public function setActiveTab($tab)
     {
         $this->activeTab = $tab;
-        $this->resetPage(); // reset pagination si nécessaire
-
-        if ($tab === 'Schuler') {
-        $this->importSchulersFromCsv();
-        }
+        $this->resetPage();
     }
-
-    // Propriété pour chaques méthodes
 
     //Land
 
     public function getLandProperty()
     {
-        $query = Land::with(['schulen']) // Charger les écoles associées
-            ->withCount(['schulen']);    // Compter le nombre d’écoles par pays
+        $query = Land::with(['schulen'])
+            ->withCount(['schulen']);
 
-        // Filtrage (si tu cherches un pays)
         if (!empty($this->landSearch)) {
             $query->where('nameLand', 'like', '%' . $this->landSearch . '%');
         }
 
         return $query
-            ->orderBy($this->landSortField ?? 'nameLand', $this->landSortDirection ?? 'asc')
+            ->orderBy($this->landSortField, $this->landSortDirection)
             ->paginate(10);
     }
 
@@ -152,34 +147,55 @@ class Dashboard extends Component
 
     public function getSchulersProperty()
     {
-        $query = Schuler::with(['schule', 'firma']);
+        $query = Schuler::with(['schule', 'firma', 'land']); // Ajoute 'land' si la relation existe
 
+        // 🔍 Filtre de recherche
         if (!empty($this->schulerSearch)) {
             $search = $this->schulerSearch;
             $query->where(function ($q) use ($search) {
                 $q->where('vorname', 'like', "%{$search}%")
-                    ->orWhere('familiename', 'like', "%{$search}%");
+                    ->orWhere('familiename', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
-        $query->orderBy($this->schulerSortField ?? 'familiename', $this->schulerSortDirection ?? 'asc');
+        // 🔤 Tri dynamique
+        $query->orderBy(
+            $this->schulerSortField ?? 'familiename',
+            $this->schulerSortDirection ?? 'asc'
+        );
 
+        // 📦 Pagination + transformation
         return $query->paginate(10)->through(function ($schuler) {
+            // 🧩 Gestion des dates (évite les erreurs Carbon)
+            $formatDate = function ($date) {
+                if (empty($date)) {
+                    return 'N/A';
+                }
+
+                try {
+                    // Carbon accepte Y-m-d depuis MySQL
+                    return Carbon::parse($date)->format('d/m/Y');
+                } catch (\Exception $e) {
+                    // Si jamais le CSV contenait du dd/mm/yyyy, on essaie ce format
+                    try {
+                        return Carbon::createFromFormat('d/m/Y', $date)->format('d/m/Y');
+                    } catch (\Exception $e2) {
+                        return 'N/A';
+                    }
+                }
+            };
+
             return [
-                'id' => $schuler->id_Schuler,
+                'id' => $schuler->id_Schuler ?? 'N/A',
                 'vorname' => $schuler->vorname ?? 'N/A',
                 'familiename' => $schuler->familiename ?? 'N/A',
                 'email' => $schuler->email ?? 'N/A',
                 'landSchuler' => $schuler->landSchuler ?? 'N/A',
                 'deutschniveauSchuler' => $schuler->deutschniveauSchuler ?? 'N/A',
                 'bildungsniveauSchuler' => $schuler->bildungsniveauSchuler ?? 'N/A',
-                'datumAnfangAusbildung' => $schuler->datumAnfangAusbildung
-    ? Carbon::parse($schuler->datumAnfangAusbildung)->format('d/m/Y')
-    : 'N/A',
-
-'datumEndeAusbildung' => $schuler->datumEndeAusbildung
-    ? Carbon::parse($schuler->datumEndeAusbildung)->format('d/m/Y')
-    : 'N/A',
+                'datumAnfangAusbildung' => $formatDate($schuler->datumAnfangAusbildung),
+                'datumEndeAusbildung' => $formatDate($schuler->datumEndeAusbildung),
                 'schule' => $schuler->schule->name_Schule ?? 'Non assigné',
                 'firma' => $schuler->firma->name_Firma ?? 'Non assigné',
                 'pays' => $schuler->land->nameLand ?? 'Non assigné',
@@ -187,53 +203,185 @@ class Dashboard extends Component
         });
     }
 
+
+    // NOUVELLE MÉTHODE: Ouvrir le modal d'import
+    public function openImportModal()
+    {
+        $this->reset(['csvFile', 'importMessage']);
+        $this->showImportModal = true;
+    }
+
+    // NOUVELLE MÉTHODE: Fermer le modal d'import
+    public function closeImportModal()
+    {
+        $this->showImportModal = false;
+        $this->reset(['csvFile', 'importMessage']);
+    }
+
+    // NOUVELLE MÉTHODE: Import depuis fichier uploadé
     public function importSchulersFromCsv()
     {
-        // 📁 Chemin du CSV sur le serveur
-        $fullPath = storage_path('app/data/schuler.csv');
+        try {
+            $this->importMessage = "Validation du fichier...";
 
-        if (!file_exists($fullPath)) {
-            session()->flash('error', 'Le fichier CSV est introuvable : ' . $fullPath);
-            return;
-        }
+            $this->validate([
+                'csvFile' => 'required|file|mimes:csv,txt|max:10240',
+            ]);
 
-        if (($handle = fopen($fullPath, 'r')) !== false) {
-            $header = fgetcsv($handle, 1000, ';'); // <-- Séparateur point-virgule
+            $this->importMessage = "Lecture du fichier...";
 
-            while (($data = fgetcsv($handle, 1000, ';')) !== false) {
-                $row = array_combine($header, $data);
+            $filePath = $this->csvFile->getRealPath();
+            $importedCount = 0;
+            $errorCount = 0;
 
-                \App\Models\Schuler::updateOrCreate(
-                    ['email' => $row['email']],
-                    [
-                        'vorname' => $row['vorname'] ?? null,
-                        'familiename' => $row['familiename'] ?? null,
-                        'geburtsdatumSchuler' => $this->convertDate($row['geburtstag'] ?? null),
-                        'landSchuler' => $row['landSchuler'] ?? null,
-                        'deutschniveauSchuler' => $row['deutschniveauSchuler'] ?? null,
-                        'bildungsniveauSchuler' => $row['bildungsniveauSchuler'] ?? null,
-                        'datumAnfangAusbildung' => $this->convertDate($row['datumAnfangAusbildung'] ?? null),
-                        'datumEndeAusbildung' => $this->convertDate($row['datumEndeAusbildung'] ?? null),
-                    ]
-                );
+            if (($handle = fopen($filePath, 'r')) !== false) {
+                $header = fgetcsv($handle, 1000, ';');
+
+                if (!$header) {
+                    $this->importMessage = "❌ Fichier CSV vide ou corrompu";
+                    fclose($handle);
+                    return;
+                }
+
+                if (!in_array('email', $header)) {
+                    $this->importMessage = "❌ Colonne 'email' manquante";
+                    fclose($handle);
+                    return;
+                }
+
+                while (($data = fgetcsv($handle, 1000, ';')) !== false) {
+                    try {
+                        // Ignorer les lignes complètement vides
+                        if (empty(array_filter($data))) {
+                            continue;
+                        }
+
+                        if (count($header) !== count($data)) {
+                            $errorCount++;
+                            Log::warning("Ligne CSV ignorée (colonnes incorrectes)", ['ligne' => $data]);
+                            continue;
+                        }
+
+                        $row = array_combine($header, $data);
+
+                        // Nettoyer et forcer UTF-8
+                        foreach ($row as $k => $v) {
+                            $row[$k] = trim($v);
+                            $row[$k] = mb_convert_encoding($row[$k], 'UTF-8', 'Windows-1252');
+                        }
+
+                        // Vérifier email
+                        if (empty($row['email']) || !filter_var($row['email'], FILTER_VALIDATE_EMAIL)) {
+                            $errorCount++;
+                            Log::warning("Email invalide", ['email' => $row['email'], 'ligne' => $row]);
+                            continue;
+                        }
+
+                        // Convertir les dates
+                        $row['geburtstag'] = $row['geburtstag']
+                            ? \Carbon\Carbon::createFromFormat('d/m/Y', $row['geburtstag'])->format('Y-m-d')
+                            : null;
+
+                        $row['datumAnfangAusbildung'] = $row['datumAnfangAusbildung']
+                            ? \Carbon\Carbon::createFromFormat('d/m/Y', $row['datumAnfangAusbildung'])->format('Y-m-d')
+                            : null;
+
+                        $row['datumEndeAusbildung'] = $row['datumEndeAusbildung']
+                            ? \Carbon\Carbon::createFromFormat('d/m/Y', $row['datumEndeAusbildung'])->format('Y-m-d')
+                            : null;
+
+                        // Mapper valeurs ENUM
+                        $bildungsniveauMap = [
+                            'Primaire' => 'Grundschule',
+                            'Secondaire' => 'Gymnasium',
+                            'Universitaire' => 'Universität',
+                            'Beruflich' => 'Beruflich',
+                        ];
+                        $row['bildungsniveauSchuler'] = $bildungsniveauMap[$row['bildungsniveauSchuler']]
+                            ?? $row['bildungsniveauSchuler'];
+
+                        // Création ou update
+                        Schuler::updateOrCreate(
+                            ['email' => $row['email']],
+                            [
+                                'vorname' => $row['vorname'] ?? null,
+                                'familiename' => $row['familiename'] ?? null,
+                                'geburtsdatumSchuler' => $row['geburtstag'] ?? null,
+                                'landSchuler' => $row['landSchuler'] ?? null,
+                                'deutschniveauSchuler' => $row['deutschniveauSchuler'] ?? null,
+                                'bildungsniveauSchuler' => $row['bildungsniveauSchuler'] ?? null,
+                                'datumAnfangAusbildung' => $row['datumAnfangAusbildung'] ?? null,
+                                'datumEndeAusbildung' => $row['datumEndeAusbildung'] ?? null,
+                                'id_Firma' => $row['id_Firma'] ?? null,
+                                'id_Schule' => $row['id_Schule'] ?? null,
+                                'idLand' => $row['idLand'] ?? 1,
+                                'id_Dokument' => $row['id_Dokument'] ?? null,
+                                'idAutorite' => $row['idAutorite'] ?? null,
+                            ]
+                        );
+
+                        $importedCount++;
+                    } catch (\Exception $e) {
+                        $errorCount++;
+                        Log::error("Erreur ligne CSV: " . $e->getMessage(), ['ligne' => $data]);
+                    }
+                }
+
+                fclose($handle);
+
+                $this->importMessage = "✅ $importedCount élèves importés, $errorCount erreurs";
+                session()->flash('success', "$importedCount élèves importés, $errorCount erreurs");
+
+                $this->closeImportModal();
+            } else {
+                $this->importMessage = "❌ Impossible d'ouvrir le fichier CSV";
+                session()->flash('error', 'Impossible d\'ouvrir le fichier CSV');
             }
-            fclose($handle);
+        } catch (\Exception $e) {
+            Log::error("Erreur critique import CSV: " . $e->getMessage());
+            $this->importMessage = "❌ Erreur: " . $e->getMessage();
+            session()->flash('error', "Erreur lors de l'import CSV");
         }
+
         $this->resetPage();
     }
+
 
     // 🔧 Convertit les dates du format "dd/mm/yyyy" en "yyyy-mm-dd"
     private function convertDate($date)
     {
         if (!$date) return null;
-        $parts = explode('/', $date);
-        if (count($parts) === 3) {
-            return "{$parts[2]}-{$parts[1]}-{$parts[0]}";
+
+        // Nettoyer la date
+        $date = trim($date);
+
+        // Essayer différents formats
+        $formats = [
+            'd/m/Y',
+            'd-m-Y',
+            'd.m.Y',  // Format européen
+            'Y-m-d',
+            'Y/m/d',            // Format ISO
+            'm/d/Y',
+            'm-d-Y',            // Format US
+        ];
+
+        foreach ($formats as $format) {
+            $parsedDate = \DateTime::createFromFormat($format, $date);
+            if ($parsedDate !== false) {
+                return $parsedDate->format('Y-m-d');
+            }
         }
-        return $date;
+
+        // Essayer avec strtotime
+        $timestamp = strtotime($date);
+        if ($timestamp !== false) {
+            return date('Y-m-d', $timestamp);
+        }
+
+        Log::warning("Date non convertible: " . $date);
+        return null;
     }
-
-
 
     public function sortSchulers($field)
     {
@@ -261,12 +409,12 @@ class Dashboard extends Component
             $this->validate([
                 'schuler.vorname' => 'required|string|max:255',
                 'schuler.familiename' => 'required|string|max:255',
-                'schuler.geburtsdatum_Schuler' => 'required|date',
-                'schuler.land_Schuler' => 'required|string|max:255',
-                'schuler.deutschniveau_Schuler' => 'required|string|max:255',
-                'schuler.bildungsniveau_Schuler' => 'required|string|max:255',
-                'schuler.datum_Anfang_Ausbildung' => 'required|date',
-                'schuler.datum_Ende_Ausbildung' => 'required|date',
+                'schuler.geburtsdatumSchuler' => 'required|date',
+                'schuler.landSchuler' => 'required|string|max:255',
+                'schuler.deutschniveauSchuler' => 'required|string|max:255',
+                'schuler.bildungsniveauSchuler' => 'required|string|max:255',
+                'schuler.datumAnfangAusbildung' => 'required|date',
+                'schuler.datumEndeAusbildung' => 'required|date',
                 'schuler.email' => 'required|email|max:255',
             ]);
 
@@ -555,7 +703,7 @@ class Dashboard extends Component
 
     public function previousLandsPage()
     {
-        if ($this->foldersPage > 1) {
+        if ($this->LandsPage > 1) {
             $this->landPage--;
         }
     }
@@ -664,6 +812,8 @@ class Dashboard extends Component
             'firmaPage' => $this->firmaPage,
             'formulairesPage' => $this->formulairesPage,
             'showSchulerModal' => $this->showSchulerModal,
+            'showImportModal' => $this->showImportModal,
+            'importMessage' => $this->importMessage,
         ]);
     }
 }

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title ?? 'Schulemanager' }}</title>
+    <title>{{ $title ?? 'Schulmanager' }}</title>
 
     <!-- Font Awesome & Tailwind -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -92,7 +92,7 @@
     <!-- Header global -->
     <header class="mb-6">
         <div class="max-w-7xl mx-auto flex justify-between items-center bg-gray-200 p-4 rounded-md">
-            <h1 class="text-2xl font-bold text-gray-900">{{ $title ?? 'SCHULEMANAGER' }}</h1>
+            <h1 class="text-2xl font-bold text-gray-900">{{ $title ?? 'SCHULMANAGER' }}</h1>
             <nav class="flex gap-4">
                 <a href="{{ route('dashboard') }}" class="text-blue-600 font-medium">Startseite</a>
                 <form method="POST" action="{{ route('logout') }}">
@@ -111,7 +111,7 @@
 
     <!-- Footer -->
     <footer class="mt-12 text-center text-gray-500 text-sm">
-        &copy; {{ date('Y') }} PS-Solutions4You UG • Powered by Innovation
+        &copy; {{ date('Y') }} SchulManager • Powered by Kevin RAZA
     </footer>
 
     @livewireScripts

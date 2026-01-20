@@ -7,8 +7,8 @@
             </div>
         </div>
         <div class="flex gap-2">
-            <button class="btn btn-secondary"><i class="fas fa-filter"></i> Filtres</button>
-            <button class="btn btn-secondary"><i class="fas fa-sort"></i> Trier</button>
+            <button class="btn btn-secondary"><i class="fas fa-filter"></i> Filtern</button>
+            <button class="btn btn-secondary"><i class="fas fa-sort"></i> Sortieren</button>
         </div>
     </div>
 
@@ -17,13 +17,13 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>Élève</th>
-                    <th>Email</th>
-                    <th>École</th>
-                    <th>Entreprise</th>
-                    <th>Formation</th>
-                    <th>Niveau Allemand</th>
-                    <th>Période</th>
+                    <th>Scüler</th>
+                    <th>E-Mail</th>
+                    <th>Schule</th>
+                    <th>Unternehmen</th>
+                    <th>Ausbildung</th>
+                    <th>Deutschkenntnisse</th>
+                    <th>Zeitraum</th>
                 </tr>
             </thead>
             <tbody>
@@ -69,8 +69,8 @@
                     <td colspan="7" class="px-6 py-8 text-center">
                         <div class="text-gray-500">
                             <i class="fas fa-user-graduate text-4xl mb-4"></i>
-                            <p class="font-medium">Aucun élève trouvé</p>
-                            <p class="text-sm mt-1">Aucun élève n'est enregistré dans le système</p>
+                            <p class="font-medium">Keine Schüler gefunden</p>
+                            <p class="text-sm mt-1">Es sind keine Schüler im System registriert</p>
                         </div>
                     </td>
                 </tr>
